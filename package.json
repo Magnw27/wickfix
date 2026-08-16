@@ -1,0 +1,17 @@
+{
+  "name": "workspace",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@opencode-ai/cli": "^0.0.0-next-17444",
+    "9router": "^0.5.55",
+    "opencode-ai": "^1.18.18"
+  }
+}
