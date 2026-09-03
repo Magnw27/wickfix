@@ -2,10 +2,15 @@ modules = ["nodejs-20"]
 
 [nix]
 channel = "stable-25_05"
+packages = ["nano"]
 
 [[ports]]
 localPort = 3000
 externalPort = 3000
+
+[[ports]]
+localPort = 8000
+externalPort = 8000
 
 [[ports]]
 localPort = 20128

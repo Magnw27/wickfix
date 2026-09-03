@@ -1,0 +1,20 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "model": "omniroute/pemula",
+  "providers": {
+    "myprovider": {
+      "name": "My Provider",
+      "package": "@opencode-ai/ai/providers/openai-compatible",
+      "settings": {
+        "baseURL": "https://pry-resend-atrophy.ngrok-free.dev/v1",
+        "apiKey": "sk-5f238e76072d7926-812293-20f31882"
+      },
+      "models": {
+        "my-model": {
+          "modelID": "my-model",
+          "name": "pemula"
+        }
+      }
+    }
+  }
+}
