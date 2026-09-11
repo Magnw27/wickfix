@@ -1,0 +1,190 @@
+/* WickAI responsive UI layer — additive, mobile-first overrides. */
+
+:root {
+  --touch: 44px;
+  --chat-content: 760px;
+}
+
+/* Keep interactive controls comfortable on touch devices without changing the desktop visual language. */
+button,
+a,
+input,
+textarea,
+select { touch-action: manipulation; }
+
+#chat-page .chat-shell,
+#chat-page > .flex { min-height: 100%; }
+
+#chat-scroll {
+  scrollbar-gutter: stable;
+  overscroll-behavior-y: contain;
+}
+
+#chat {
+  width: min(100%, var(--chat-content));
+  padding-inline: clamp(12px, 3vw, 24px);
+}
+
+.composer-wrap {
+  width: 100%;
+  padding-inline: max(12px, env(safe-area-inset-left)) max(12px, env(safe-area-inset-right));
+}
+
+#composer {
+  width: min(100%, var(--chat-content));
+  margin-inline: auto;
+  overflow: hidden;
+}
+
+#input { min-height: 48px; }
+
+/* Tablet / small laptop: give the chat more breathing room. */
+@media (min-width: 641px) and (max-width: 1023px) {
+  #chat { max-width: 820px; }
+  .composer-wrap > div { max-width: 820px; }
+  #model-popup { width: min(420px, calc(100vw - 32px)); }
+}
+
+/* Phones: prioritize one-handed use, safe areas and readable chat bubbles. */
+@media (max-width: 640px) {
+  html, body { min-height: 100%; overflow-x: hidden; }
+
+  #chat-page {
+    height: 100dvh;
+    min-height: 100dvh;
+    bottom: 0;
+  }
+
+  #chat-page > .flex { height: 100%; min-height: 0; }
+
+  /* Drawer */
+  #sidebar {
+    width: min(86vw, 340px);
+    box-shadow: 24px 0 70px rgba(0,0,0,.55);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  #sidebar-overlay {
+    background: rgba(0,0,0,.66);
+    backdrop-filter: blur(3px);
+    -webkit-backdrop-filter: blur(3px);
+  }
+  #sidebar .icon-btn,
+  #sidebar button { min-width: var(--touch); min-height: var(--touch); }
+
+  /* Header */
+  #chat-page header {
+    min-height: calc(54px + env(safe-area-inset-top));
+    height: auto;
+    padding-top: env(safe-area-inset-top);
+    padding-inline: 8px;
+  }
+  #sidebar-toggle-header { width: 42px; height: 42px; }
+  #chat-page header > .flex-1 { min-width: 0; }
+  .model-picker {
+    max-width: min(52vw, 250px);
+    min-height: 42px;
+    padding-inline: 10px;
+  }
+  .model-picker-name { max-width: 34vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .provider-badge { display: none !important; }
+  #system-prompt-btn,
+  #export-btn,
+  #menu-btn { width: 42px; height: 42px; }
+
+  /* Model picker becomes a bottom-sheet-like surface on phones. */
+  #model-popup {
+    position: fixed !important;
+    left: 8px !important;
+    right: 8px !important;
+    top: calc(env(safe-area-inset-top) + 62px) !important;
+    width: auto !important;
+    max-height: min(70dvh, 560px);
+    border-radius: 16px;
+    box-shadow: 0 24px 80px rgba(0,0,0,.7);
+  }
+  #model-list { max-height: min(48dvh, 360px); }
+
+  /* Messages */
+  #chat {
+    max-width: 100%;
+    gap: 18px;
+    padding-top: 18px;
+    padding-bottom: 14px;
+    padding-inline: 12px;
+  }
+  #chat > * { max-width: 100%; }
+
+  /* Composer stays above the home indicator and never touches screen edges. */
+  .composer-wrap {
+    padding-top: 6px;
+    padding-bottom: calc(8px + env(safe-area-inset-bottom));
+    background: linear-gradient(to top, rgba(10,10,10,.98) 70%, rgba(10,10,10,0));
+  }
+  #composer {
+    border-radius: 16px;
+    box-shadow: 0 12px 40px rgba(0,0,0,.5);
+  }
+  #input {
+    min-height: 50px;
+    max-height: 34dvh;
+    padding-inline: 14px;
+    padding-top: 13px;
+    font-size: 16px; /* prevents iOS zoom */
+  }
+  #composer .icon-btn { width: 42px; height: 42px; }
+  #send-btn { width: 42px; height: 42px; }
+  #stop-btn { min-height: 38px; }
+  #attachments { padding-inline: 12px; }
+  #attachments > * { max-width: calc(100vw - 48px); }
+  .composer-wrap > div > p { padding-inline: 8px; font-size: 10px; }
+
+  #scroll-bottom-btn {
+    right: 14px;
+    bottom: calc(104px + env(safe-area-inset-bottom));
+  }
+
+  /* General mobile page rhythm. */
+  #catalog-page main,
+  #docs-page main { padding-inline: 16px; }
+  #catalog-filters { overflow-x: auto; max-width: 100%; padding-bottom: 2px; }
+  .filter-tabs { flex-wrap: nowrap; }
+  #catalog-grid { grid-template-columns: 1fr; }
+  .search-box { min-height: 46px; }
+  .hero-stats { gap: 14px; }
+  .hero-stats .h-8 { height: 22px; }
+  .marquee-track { gap: 28px; }
+
+  /* Avoid hover-only affordances on touch screens. */
+  .icon-btn:hover,
+  .btn:hover,
+  .sugg-item:hover { transform: none; }
+}
+
+@media (max-width: 380px) {
+  #system-prompt-btn { display: none; }
+  #model-picker { max-width: 46vw; }
+  .hero-stats { transform: scale(.92); }
+  #chat { padding-inline: 9px; }
+  .composer-wrap { padding-inline: 8px; }
+}
+
+@media (orientation: landscape) and (max-width: 900px) {
+  #chat-page header { min-height: 50px; padding-top: 0; }
+  #input { max-height: 24dvh; }
+  #chat { padding-top: 10px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}
+
+/* Large desktop: keep the app airy rather than stretching messages across the screen. */
+@media (min-width: 1280px) {
+  :root { --chat-content: 820px; }
+  #chat { padding-inline: 24px; }
+}
