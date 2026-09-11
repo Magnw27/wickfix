@@ -1,0 +1,28 @@
+/* Phase 5: additive UI polish. Loaded after the preserved base/responsive layers. */
+:root {
+  --ui-focus: 0 0 0 3px rgba(255,255,255,.14);
+  --ui-panel: rgba(255,255,255,.025);
+}
+
+:where(button, a, input, textarea, select):focus-visible {
+  outline: none;
+  box-shadow: var(--ui-focus);
+}
+
+:where(.message, .chat-message, .bubble) {
+  overflow-wrap: anywhere;
+}
+
+:where(textarea, input) {
+  color-scheme: dark;
+}
+
+@media (min-width: 1024px) {
+  :where(.chat-shell, .chat-main, #chat-page) {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; scroll-behavior: auto !important; }
+}
