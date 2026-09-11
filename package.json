@@ -1,20 +1,17 @@
 {
-  "name": "workspace",
+  "name": "wickfix",
   "version": "1.0.0",
+  "description": "WickAI — AI chat powered by OpenRouter",
   "main": "server.js",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "dev": "node server.js"
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "description": "",
-  "dependencies": {
-    "9router": "^0.5.65",
-    "@opencode-ai/cli": "^0.0.0-next-17444",
-    "better-sqlite3": "^12.6.2",
-    "opencode-ai": "1.18.30"
-  }
+  "license": "ISC"
 }

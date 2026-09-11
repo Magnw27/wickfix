@@ -1,8 +1,17 @@
 import fs from 'node:fs'
 import path from 'node:path'
+import os from 'node:os'
 import { ROOT } from './config.js'
 
-const FILE = path.join(ROOT, 'data', 'chats.json')
+/* On serverless platforms (Vercel) the repo dir is read-only except /tmp. */
+function resolveFile() {
+  if (process.env.CHATS_PATH) return process.env.CHATS_PATH
+  const root = path.join(ROOT, 'data', 'chats.json')
+  if (process.env.VERCEL) return path.join(os.tmpdir(), 'wickfix-chats.json')
+  return root
+}
+
+const FILE = resolveFile()
 let cache = null
 
 export function getChats() {

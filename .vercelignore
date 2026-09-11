@@ -1,0 +1,11 @@
+.bin
+.cache
+.config
+.agents
+.local
+.upm
+scripts
+tunnel.sh
+bun.lock
+data
+*.log
