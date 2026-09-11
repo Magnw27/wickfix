@@ -758,3 +758,43 @@ section[id] { scroll-margin-top: 80px; }
   transition: color .15s, background .15s;
 }
 .model-custom-btn:hover { color: var(--text); background: var(--surface-2); }
+
+/* ============================================================
+   Settings modal — API key / base URL / model
+   ============================================================ */
+.settings-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-soft);
+  color: var(--text-2);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .2s var(--ease), background .2s var(--ease), color .2s var(--ease);
+}
+.settings-card i { margin-bottom: 6px; color: var(--text-3); transition: color .2s; }
+.settings-card:hover { border-color: var(--border-2); }
+.settings-card.active { border-color: var(--text-3); background: var(--surface-2); color: var(--text); }
+.settings-card.active i { color: var(--text); }
+.settings-card-t { font-size: 13px; font-weight: 600; color: inherit; }
+.settings-card-d { font-size: 10.5px; line-height: 1.4; color: var(--text-3); }
+.settings-test-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px dashed var(--border-2);
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color .2s, color .2s, background .2s;
+}
+.settings-test-btn:hover:not(:disabled) { border-color: var(--text-3); color: var(--text); background: var(--surface-2); }
+.settings-test-btn:disabled { opacity: .55; cursor: default; }

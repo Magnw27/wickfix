@@ -15,6 +15,7 @@ import {
   handleImageGen,
   handleHealth,
   handleConfig,
+  handleTest,
 } from './server/handlers.js'
 
 const MIME = {
@@ -107,6 +108,13 @@ const server = http.createServer(async (req, res) => {
 
     if (req.method === 'GET' && pathname === '/api/config') {
       return handleConfig(req, res)
+    }
+
+    if (req.method === 'POST' && pathname === '/api/test') {
+      if (!rateLimit(clientIp(req), config.generalRateWindowMs, config.generalRateMax)) {
+        return sendError(res, 429, 'Terlalu banyak permintaan. Tunggu sebentar.')
+      }
+      return handleTest(req, res)
     }
 
     if (req.method === 'GET' || req.method === 'HEAD') {

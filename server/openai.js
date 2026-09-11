@@ -17,36 +17,40 @@ export function friendlyError(status) {
   return ERROR_MESSAGES[status] || `Terjadi kesalahan (${status}). Coba lagi.`
 }
 
-export function authHeaders() {
+export function authHeaders(apiKey = config.apiKey, baseUrl) {
   return {
     'Content-Type': 'application/json',
-    Authorization: `Bearer ${config.apiKey}`,
+    Authorization: `Bearer ${apiKey || config.apiKey}`,
     ...(config.appReferer ? { 'HTTP-Referer': config.appReferer } : {}),
     ...(config.appTitle ? { 'X-Title': config.appTitle } : {}),
   }
 }
 
-export function fetchChatCompletion(body, signal) {
-  return fetch(`${config.openRouterBase}/chat/completions`, {
+function upstreamBase(baseUrl) {
+  return (baseUrl || config.openRouterBase)
+}
+
+export function fetchChatCompletion(body, signal, opts = {}) {
+  return fetch(`${upstreamBase(opts.baseUrl)}/chat/completions`, {
     method: 'POST',
-    headers: authHeaders(),
+    headers: authHeaders(opts.apiKey, opts.baseUrl),
     body: JSON.stringify(body),
     signal,
   })
 }
 
-export function fetchModels(signal) {
-  return fetch(`${config.openRouterBase}/models`, {
+export function fetchModels(signal, opts = {}) {
+  return fetch(`${upstreamBase(opts.baseUrl)}/models`, {
     method: 'GET',
-    headers: authHeaders(),
+    headers: authHeaders(opts.apiKey, opts.baseUrl),
     signal,
   })
 }
 
-export function fetchImageGeneration(body, signal) {
-  return fetch(`${config.openRouterBase}/images/generations`, {
+export function fetchImageGeneration(body, signal, opts = {}) {
+  return fetch(`${upstreamBase(opts.baseUrl)}/images/generations`, {
     method: 'POST',
-    headers: authHeaders(),
+    headers: authHeaders(opts.apiKey, opts.baseUrl),
     body: JSON.stringify(body),
     signal,
   })

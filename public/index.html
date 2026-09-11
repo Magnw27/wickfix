@@ -15,7 +15,7 @@
   <link rel="icon" type="image/png" href="/logo.png" />
   <link rel="apple-touch-icon" href="/logo.png" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.css" />
-  <link rel="stylesheet" href="/style.css?v=7" />
+  <link rel="stylesheet" href="/style.css?v=8" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -43,6 +43,9 @@
         <a href="/chat" data-nav data-page="chat-page" class="nav-link">Chat</a>
         <a href="/catalog" data-nav data-page="catalog-page" class="nav-link">Models</a>
         <a href="/docs" data-nav data-page="docs-page" class="nav-link">Docs</a>
+        <button id="nav-settings-btn" type="button" class="icon-btn ml-1 p-2" aria-label="Settings" title="Settings">
+          <i data-lucide="settings" class="size-4"></i>
+        </button>
         <a href="/chat" data-nav class="btn btn-primary btn-sm ml-3">Start chat</a>
       </div>
       <button id="mobile-menu-btn" class="icon-btn md:hidden" aria-label="Menu">
@@ -54,6 +57,9 @@
       <a href="/chat" data-nav data-page="chat-page" class="nav-link block py-2.5">Chat</a>
       <a href="/catalog" data-nav data-page="catalog-page" class="nav-link block py-2.5">Models</a>
       <a href="/docs" data-nav data-page="docs-page" class="nav-link block py-2.5">Docs</a>
+      <button id="mobile-settings-btn" type="button" class="flex w-full items-center gap-2 py-2.5 text-text-2 transition hover:text-text">
+        <i data-lucide="settings" class="size-4"></i>Settings
+      </button>
     </div>
   </nav>
 
@@ -446,6 +452,7 @@
     <button data-action="export-md" class="menu-item"><i data-lucide="file-text" class="size-4"></i>Export Markdown</button>
     <button data-action="export-json" class="menu-item"><i data-lucide="braces" class="size-4"></i>Export JSON</button>
     <button data-action="export-txt" class="menu-item"><i data-lucide="file-down" class="size-4"></i>Export Text</button>
+    <button data-action="settings" class="menu-item"><i data-lucide="settings" class="size-4"></i>Settings</button>
     <div class="my-1.5 border-t border-border"></div>
     <button data-action="clear" class="menu-item text-red-400 hover:bg-red-500/10"><i data-lucide="trash-2" class="size-4"></i>Clear history</button>
   </div>
@@ -480,6 +487,6 @@
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markdown.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
-  <script src="/app.js?v=7"></script>
+  <script src="/app.js?v=8"></script>
 </body>
 </html>

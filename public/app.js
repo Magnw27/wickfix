@@ -38,6 +38,8 @@ const pageTitle = document.getElementById('page-title')
 
 /* ================= Constants & State ================= */
 const LS_KEY = 'openrouter-chats:v3'
+const PROVIDER_KEY = 'wickai-provider:v1'
+const MODEL_PREF_KEY = 'wickai-model:v1'
 const FREE_ROUTER = 'openrouter/free'
 const RECOMMENDED_PREFIXES = ['openai/', 'anthropic/', 'google/gemini-', 'meta-llama/', 'mistralai/', 'deepseek/']
 const SUGGESTIONS = [
@@ -53,7 +55,7 @@ let currentChatId = null
 let abortCtrl = null
 let streaming = false
 let stickToBottom = true
-let lastModel = 'openrouter/free'
+let lastModel = loadModelPref() || 'openrouter/free'
 let attachments = []
 let searchMode = false
 let imageMode = false
@@ -63,11 +65,46 @@ let cloudReady = false
 let cloudTimer = null
 let modelPopOpen = false
 
+/* ================= Provider settings (bring-your-own key/URL) ================= */
+const DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1'
+
+function loadProvider() {
+  try {
+    const p = JSON.parse(localStorage.getItem(PROVIDER_KEY))
+    if (p && (p.mode === 'server' || p.mode === 'custom')) {
+      return { mode: p.mode, apiKey: String(p.apiKey || ''), baseUrl: String(p.baseUrl || '') }
+    }
+  } catch {}
+  return { mode: 'server', apiKey: '', baseUrl: '' }
+}
+function saveProvider(p) {
+  localStorage.setItem(PROVIDER_KEY, JSON.stringify(p))
+}
+function loadModelPref() {
+  try { return localStorage.getItem(MODEL_PREF_KEY) || '' } catch { return '' }
+}
+function saveModelPref(id) {
+  try { localStorage.setItem(MODEL_PREF_KEY, id) } catch {}
+}
+function isCustomProvider() {
+  return loadProvider().mode === 'custom'
+}
+function apiFetch(url, opts = {}) {
+  const headers = new Headers(opts.headers || {})
+  const p = loadProvider()
+  if (p.mode === 'custom') {
+    if (p.apiKey) headers.set('x-api-key', p.apiKey)
+    if (p.baseUrl) headers.set('x-api-base-url', p.baseUrl)
+  }
+  return fetch(url, { ...opts, headers })
+}
+
 /* ================= Routing & Auth (presentation layer) ================= */
 const ACCOUNTS_KEY = 'nexus-ai-accounts'
 const SESSION_KEY = 'nexus-ai-session'
 let currentPage = null
 let cfgTitle = ''
+let cfgKeyConfigured = true
 
 function getAccounts() {
   try { return JSON.parse(localStorage.getItem(ACCOUNTS_KEY)) || [] } catch { return [] }
@@ -367,6 +404,7 @@ function shortModelName(id) {
 /* ---- Model picker UI ---- */
 function selectModel(id, opts = {}) {
   lastModel = id
+  saveModelPref(id)
   modelPickerName.textContent = shortModelName(id)
   modelPickerName.title = id
   modelPickerDot.classList.toggle('free', isFreeId(id))
@@ -398,7 +436,7 @@ function scheduleCloudSave() {
 }
 async function pushChats() {
   try {
-    await fetch('/api/chats', {
+    await apiFetch('/api/chats', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chats }),
@@ -409,7 +447,7 @@ async function syncFromServer() {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), 5000)
   try {
-    const res = await fetch('/api/chats', { signal: ctrl.signal })
+    const res = await apiFetch('/api/chats', { signal: ctrl.signal })
     if (!res.ok) return
     const { chats: remote } = await res.json()
     if (Array.isArray(remote) && remote.length > 0) chats = remote
@@ -1059,7 +1097,7 @@ imageBtn.addEventListener('click', () => {
 
 async function fetchWebContext(query) {
   try {
-    const res = await fetch(`/api/search?q=${encodeURIComponent(query)}`)
+    const res = await apiFetch(`/api/search?q=${encodeURIComponent(query)}`)
     if (!res.ok) return ''
     const { results } = await res.json()
     if (!results || !results.length) return ''
@@ -1217,7 +1255,7 @@ async function tryNativeImage(prompt, ms) {
   abortCtrl = ctrl
   const timer = setTimeout(() => ctrl.abort(), ms)
   try {
-    const res = await fetch('/api/images', {
+    const res = await apiFetch('/api/images', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ model: IMAGE_MODEL, prompt }),
@@ -1249,7 +1287,7 @@ async function askSvg(prompt, contentDiv) {
   ]
   let accumulated = ''
   try {
-    const res = await fetch('/api/chat', {
+    const res = await apiFetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages, model: lastModel, max_tokens: 3000 }),
@@ -1327,7 +1365,7 @@ function buildRequestMessages(chat, currentText, atts) {
 async function fetchWithRetry(url, options, attempts = 3) {
   for (let i = 0; i < attempts; i++) {
     try {
-      return await fetch(url, options)
+      return await apiFetch(url, options)
     } catch (err) {
       if (err.name === 'AbortError') throw err
       if (i === attempts - 1) throw err
@@ -1452,7 +1490,7 @@ async function ask(chat, requestMessages) {
 /* ================= Model selector ================= */
 async function loadModels() {
   try {
-    const res = await fetch('/api/models')
+    const res = await apiFetch('/api/models')
     if (!res.ok) throw new Error(String(res.status))
     const data = await res.json()
     allModels = data.models || []
@@ -1722,9 +1760,170 @@ dropdown.addEventListener('click', (e) => {
   else if (a === 'export-md') exportChat('md')
   else if (a === 'export-json') exportChat('json')
   else if (a === 'export-txt') exportChat('txt')
+  else if (a === 'settings') openSettingsModal()
   else if (a === 'clear') clearHistory()
 })
 document.addEventListener('click', () => hideDropdown())
+
+/* ================= Settings (API key · base URL · model) ================= */
+const settingsRadio = (mode, active) => `
+  <button type="button" data-mode="${mode}" class="settings-card ${active ? 'active' : ''}" data-settings-mode="${mode}">
+    <i data-lucide="${mode === 'server' ? 'server' : 'key-round'}" class="size-4"></i>
+    <span class="settings-card-t">${mode === 'server' ? 'Pakai server' : 'Custom'}</span>
+    <span class="settings-card-d">${mode === 'server' ? 'API key & URL dari backend' : 'API key & URL sendiri'}</span>
+  </button>`
+
+function openSettingsModal() {
+  const p = loadProvider()
+  const keyCfg = typeof cfgKeyConfigured === 'boolean' ? cfgKeyConfigured : true
+  const customActive = p.mode === 'custom'
+  openModal(`
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-base font-semibold flex items-center gap-2"><i data-lucide="settings" class="size-5 text-text-2"></i>Settings</h3>
+      <button data-close class="p-1.5 rounded-lg text-text-3 hover:text-text hover:bg-surface-2"><i data-lucide="x" class="size-4"></i></button>
+    </div>
+    <p class="text-xs text-text-3 mb-3">Ubah provider AI tanpa menyentuh backend — tersimpan di browser.</p>
+
+    <div class="grid grid-cols-2 gap-2 mb-4">
+      ${settingsRadio('server', !customActive)}
+      ${settingsRadio('custom', customActive)}
+    </div>
+    <div id="settings-custom" class="space-y-3 ${customActive ? '' : 'hidden'}">
+      <div class="modal-field">
+        <label for="settings-key">API key</label>
+        <div class="relative">
+          <input id="settings-key" type="password" value="${p.apiKey}" autocomplete="off" spellcheck="false"
+            placeholder="${keyCfg ? 'Kosongkan = pakai key server' : 'sk-…  (server belum punya key)'}"
+            class="w-full bg-base-soft border border-border rounded-xl px-3.5 py-2.5 pr-9 text-sm focus:outline-none focus:ring-2 focus:ring-text-3 placeholder:text-text-3" />
+          <button id="settings-key-toggle" type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-text-3 hover:text-text" aria-label="Tampilkan key">
+            <i data-lucide="eye" class="size-4"></i>
+          </button>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label for="settings-url">Base URL</label>
+        <input id="settings-url" type="text" value="${p.baseUrl}" autocomplete="off" spellcheck="false"
+          placeholder="${DEFAULT_BASE_URL}"
+          class="w-full bg-base-soft border border-border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-text-3 placeholder:text-text-3" />
+        <p class="mt-1 text-[11px] text-text-3">Contoh: https://openrouter.ai/api/v1 — diakhiri /v1</p>
+      </div>
+      <div class="modal-field">
+        <label for="settings-model">Model</label>
+        <select id="settings-model" class="w-full bg-base-soft border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-text-3">${settingsModelOptions()}</select>
+        <p class="mt-1 text-[11px] text-text-3">Model untuk percakapan berikutnya.</p>
+      </div>
+      <button id="settings-test" type="button" class="settings-test-btn w-full">
+        <i data-lucide="plug-zap" class="size-4"></i><span>Test koneksi</span>
+      </button>
+      <p id="settings-test-result" class="hidden text-xs"></p>
+    </div>
+
+    <div class="flex justify-end gap-2 mt-5">
+      <button data-close class="px-4 py-2 rounded-lg text-sm text-text-2 hover:bg-surface-2">Batal</button>
+      <button id="settings-save" class="px-4 py-2 rounded-lg text-sm font-medium bg-white text-black hover:brightness-90">Simpan</button>
+    </div>
+  `)
+
+  const customBox = document.getElementById('settings-custom')
+  modal.querySelectorAll('[data-settings-mode]').forEach((el) => {
+    el.addEventListener('click', () => {
+      modal.querySelectorAll('[data-settings-mode]').forEach((x) => x.classList.remove('active'))
+      el.classList.add('active')
+      customBox.classList.toggle('hidden', el.dataset.mode !== 'custom')
+    })
+  })
+
+  document.getElementById('settings-key-toggle').addEventListener('click', (e) => {
+    const inp = document.getElementById('settings-key')
+    const vis = inp.type === 'text'
+    inp.type = vis ? 'password' : 'text'
+    e.currentTarget.querySelector('i').setAttribute('data-lucide', vis ? 'eye' : 'eye-off')
+    lucide.createIcons()
+  })
+  document.getElementById('settings-model').addEventListener('change', (e) => {
+    if (e.target.value) selectModel(e.target.value, { silent: true })
+  })
+
+  document.getElementById('settings-test').addEventListener('click', testProvider)
+  document.getElementById('settings-save').addEventListener('click', applySettings)
+}
+
+function settingsModelOptions() {
+  const opt = (id) => `<option value="${escapeHtml(id)}" ${id === lastModel ? 'selected' : ''}>${escapeHtml(shortModelName(id))} · ${id}</option>`
+  let html = ''
+  const free = allModels.filter((m) => m.free).slice(0, 40)
+  if (allModels.length) html += `<optgroup label="Free">${free.map((m) => opt(m.id)).join('')}</optgroup>`
+  if (!allModels.some((m) => m.id === lastModel)) html += opt(lastModel)
+  if (allModels.length) html += `<optgroup label="Semua model">${allModels.slice(0, 200).map((m) => opt(m.id)).join('')}</optgroup>`
+  return html
+}
+
+function settingsInputs() {
+  const active = modal.querySelector('[data-settings-mode].active')?.dataset.mode || 'server'
+  return {
+    mode: active,
+    apiKey: document.getElementById('settings-key') ? document.getElementById('settings-key').value.trim() : '',
+    baseUrl: document.getElementById('settings-url') ? document.getElementById('settings-url').value.trim() : '',
+  }
+}
+
+async function testProvider() {
+  const s = settingsInputs()
+  const result = document.getElementById('settings-test-result')
+  const btn = document.getElementById('settings-test')
+  btn.disabled = true
+  btn.querySelector('span').textContent = 'Menghubungkan…'
+  result.classList.add('hidden')
+  try {
+    const headers = { 'Content-Type': 'application/json' }
+    if (s.mode === 'custom') {
+      if (s.apiKey) headers['x-api-key'] = s.apiKey
+      if (s.baseUrl) headers['x-api-base-url'] = s.baseUrl
+    }
+    const res = await fetch('/api/test', { method: 'POST', headers })
+    const data = await res.json().catch(() => ({}))
+    result.className = 'text-xs mt-2'
+    result.classList.remove('hidden', 'text-green-400', 'text-red-400')
+    const src = s.mode === 'custom' && s.baseUrl ? s.baseUrl : 'server default'
+    if (data.ok) {
+      result.classList.add('text-green-400')
+      result.textContent = `OK — ${data.count || 0} model tersedia dari ${src}.`
+    } else {
+      result.classList.add('text-red-400')
+      result.textContent = (data.status ? `HTTP ${data.status} — ` : '') + (data.error || 'Tidak bisa terhubung ke provider.')
+    }
+  } catch {
+    result.className = 'text-xs mt-2 text-red-400'
+    result.classList.remove('hidden')
+    result.textContent = 'Gagal menghubungi server.'
+  } finally {
+    btn.disabled = false
+    btn.querySelector('span').textContent = 'Test koneksi'
+  }
+}
+
+async function applySettings() {
+  const s = settingsInputs()
+  if (s.mode === 'custom' && !s.baseUrl && !s.apiKey) {
+    showToast('Isi API key dan/atau Base URL dulu (atau pilih Pakai server).', 'error')
+    return
+  }
+  saveProvider(s)
+  closeModal()
+  showToast('Settings disimpan. Memuat model ulang…', 'info')
+  await loadModels()
+  if (allModels.length && !allModels.some((m) => m.id === lastModel)) {
+    selectModel(allModels.find((m) => m.free)?.id || allModels[0].id, { silent: true })
+  }
+  showToast('Settings disimpan', 'success')
+}
+
+document.getElementById('nav-settings-btn')?.addEventListener('click', openSettingsModal)
+document.getElementById('mobile-settings-btn')?.addEventListener('click', () => {
+  const mm = document.getElementById('mobile-menu')
+  if (mm && !mm.classList.contains('hidden')) mm.classList.add('hidden')
+  openSettingsModal()
+})
 
 /* ================= Landing effects ================= */
 function setupEffects() {
@@ -1890,7 +2089,7 @@ const DOC_ENDPOINTS = [
     body: null,
     examples: null,
     curlNow: 'curl -s https://HOST/api/models',
-    run: async () => (await fetch('/api/models')).text(),
+    run: async () => (await apiFetch('/api/models')).text(),
     requestLabel: 'arguments · none',
     bodyHint: 'This endpoint takes no body. Run it to list every model exposed by the server.',
   },
@@ -1920,7 +2119,7 @@ const DOC_ENDPOINTS = [
     desc: 'App config: title, default model, key status.',
     headers: {}, body: null, examples: null,
     curlNow: 'curl -s https://HOST/api/config',
-    run: async () => (await fetch('/api/config')).text(),
+    run: async () => (await apiFetch('/api/config')).text(),
     requestLabel: 'arguments · none',
     bodyHint: 'Read-only configuration object.',
   },
@@ -1932,7 +2131,7 @@ const DOC_ENDPOINTS = [
     query: 'q',
     queryValue: 'large language models 2026',
     curlNow: 'curl -s "https://HOST/api/search?q=latest+AI+news"',
-    run: () => fetch(`/api/search?q=${encodeURIComponent('large language models 2026')}`).then(r => r.ok ? r.text() : r.text().then(t => `HTTP ${r.status}\n${t}`)),
+    run: () => apiFetch(`/api/search?q=${encodeURIComponent('large language models 2026')}`).then(r => r.ok ? r.text() : r.text().then(t => `HTTP ${r.status}\n${t}`)),
     requestLabel: 'query params',
     bodyHint: 'Returns { results: [] } of fresh web results.',
   },
@@ -1946,7 +2145,7 @@ const DOC_ENDPOINTS = [
   -X POST \\
   -H "Content-Type: application/json" \\
   -d '${JSON.stringify(b)}'`,
-    run: (b) => fetch('/api/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(r => r.ok ? r.text() : r.text().then(t => `HTTP ${r.status}\n${t}`)),
+    run: (b) => apiFetch('/api/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(r => r.ok ? r.text() : r.text().then(t => `HTTP ${r.status}\n${t}`)),
     requestLabel: 'request body · json',
     bodyHint: 'Returns { url } or { b64 } when successful.',
   },
@@ -1956,7 +2155,7 @@ const DOC_ENDPOINTS = [
     desc: 'Fetch all cloud-synced chats.',
     headers: {}, body: null, examples: null,
     curlNow: 'curl -s https://HOST/api/chats',
-    run: async () => (await fetch('/api/chats')).text(),
+    run: async () => (await apiFetch('/api/chats')).text(),
     requestLabel: 'arguments · none',
     bodyHint: 'Also supports PUT /api/chats to persist {\"chats\": []}.',
   },
@@ -1967,7 +2166,7 @@ function reqBodyJson(s) {
 }
 
 async function runStream(body) {
-  const res = await fetch('/api/chat', {
+  const res = await apiFetch('/api/chat', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -2232,13 +2431,14 @@ function init() {
     input.focus()
 
     try {
-      const res = await fetch('/api/config')
+      const res = await apiFetch('/api/config')
       const cfg = await res.json()
       if (cfg.title) {
         cfgTitle = cfg.title
         appName.textContent = cfg.title
       }
-      if (cfg.defaultModel) lastModel = cfg.defaultModel
+      cfgKeyConfigured = Boolean(cfg.keyConfigured)
+      if (cfg.defaultModel && !loadModelPref()) lastModel = cfg.defaultModel
     } catch {}
   })()
 }

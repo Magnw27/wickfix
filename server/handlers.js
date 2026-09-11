@@ -46,6 +46,20 @@ export function sendError(res, status, error) {
   sendJson(res, status, { error })
 }
 
+/* Provider override — clients may bring their own API key / base URL. */
+export function requestProvider(req) {
+  const apiKey = String(req.headers['x-api-key'] || '').trim() || config.apiKey
+  const raw = String(req.headers['x-api-base-url'] || '').trim() || config.openRouterBase
+  let baseUrl = raw.replace(/\/+$/, '')
+  try {
+    const p = new URL(raw)
+    if (p.protocol !== 'http:' && p.protocol !== 'https:') baseUrl = config.openRouterBase
+  } catch {
+    baseUrl = config.openRouterBase
+  }
+  return { apiKey, baseUrl }
+}
+
 export async function readJsonBody(req) {
   let body
   if (req.body !== undefined && req.body !== null) {
@@ -65,8 +79,9 @@ export async function readJsonBody(req) {
 /* ------------------------------------------------------------------ */
 export async function handleChat(req, res) {
   const ip = clientIp(req)
+  const { apiKey, baseUrl } = requestProvider(req)
 
-  if (!config.apiKey) {
+  if (!apiKey) {
     return sendError(res, 500, 'OPENROUTER_API_KEY belum dikonfigurasi di server.')
   }
   if (!rateLimit(ip, config.chatRateWindowMs, config.chatRateMax)) {
@@ -95,7 +110,7 @@ export async function handleChat(req, res) {
 
   let upstream
   try {
-    upstream = await fetchChatCompletion({ model, messages, stream: true }, abort.signal)
+    upstream = await fetchChatCompletion({ model, messages, stream: true }, abort.signal, { apiKey, baseUrl })
   } catch (err) {
     if (err.name === 'AbortError') return
     return sendError(res, 502, 'Gagal terhubung ke OpenRouter. Periksa koneksi jaringan dan coba lagi.')
@@ -208,7 +223,7 @@ export async function handleChat(req, res) {
 /* ------------------------------------------------------------------ */
 /*  Models list — cached                                              */
 /* ------------------------------------------------------------------ */
-const modelsCache = { data: null, at: 0 }
+const modelsCache = new Map()
 
 const FALLBACK_MODELS = [
   { id: 'openrouter/free', name: 'Free Models Router', free: true, vision: false },
@@ -220,15 +235,18 @@ const FALLBACK_MODELS = [
 ].sort((a, b) => a.id.localeCompare(b.id))
 
 export async function handleModels(req, res) {
+  const { apiKey, baseUrl } = requestProvider(req)
+  const cacheKey = `${baseUrl}|${apiKey || 'server'}`
+  const cached = modelsCache.get(cacheKey)
   const now = Date.now()
-  if (modelsCache.data && now - modelsCache.at < config.modelsCacheTtlMs) {
-    return sendJson(res, 200, { models: modelsCache.data })
+  if (cached && now - cached.at < config.modelsCacheTtlMs) {
+    return sendJson(res, 200, { models: cached.data })
   }
 
   let models = null
   let upstream
   try {
-    upstream = await fetchModels()
+    upstream = await fetchModels(null, { apiKey, baseUrl })
     if (upstream.ok) {
       const json = await upstream.json()
       const list = (json.data || [])
@@ -252,8 +270,7 @@ export async function handleModels(req, res) {
     models = FALLBACK_MODELS
   }
 
-  modelsCache.data = models
-  modelsCache.at = now
+  modelsCache.set(cacheKey, { data: models, at: now })
   sendJson(res, 200, { models })
 }
 
@@ -310,7 +327,9 @@ export async function handleSearch(req, res) {
 /*  Image generation proxy                                             */
 /* ------------------------------------------------------------------ */
 export async function handleImageGen(req, res) {
-  if (!config.apiKey) {
+  const { apiKey, baseUrl } = requestProvider(req)
+
+  if (!apiKey) {
     return sendError(res, 500, 'API key belum dikonfigurasi di server.')
   }
   if (!rateLimit(clientIp(req), config.chatRateWindowMs, config.chatRateMax)) {
@@ -333,7 +352,7 @@ export async function handleImageGen(req, res) {
   const onClose = () => ctrl.abort()
   req.on('close', onClose)
   try {
-    upstream = await fetchImageGeneration({ model, prompt, n: 1 }, ctrl.signal)
+    upstream = await fetchImageGeneration({ model, prompt, n: 1 }, ctrl.signal, { apiKey, baseUrl })
   } catch {
     clearTimeout(timer)
     return sendError(res, 504, 'Provider pembuatan gambar terlalu lama. Coba lagi.')
@@ -386,5 +405,37 @@ export function handleConfig(req, res) {
     title: config.appTitle,
     defaultModel: config.defaultModel,
     keyConfigured: Boolean(config.apiKey),
+  })
+}
+
+/* Provider connection test (lightweight — models list, reports upstream status). */
+export async function handleTest(req, res) {
+  const { apiKey, baseUrl } = requestProvider(req)
+  if (!apiKey) {
+    return sendJson(res, 200, { ok: false, status: 0, error: 'Tidak ada API key (set di backend atau Settings).', v: 1 })
+  }
+  let upstream
+  try {
+    upstream = await fetchModels(null, { apiKey, baseUrl })
+  } catch {
+    return sendJson(res, 200, { ok: false, status: 0, error: 'Gagal menghubungi provider (jaringan).' })
+  }
+  let count = 0
+  let detail = ''
+  if (upstream.ok) {
+    try {
+      const j = await upstream.json()
+      count = Array.isArray(j.data) ? j.data.length : 0
+    } catch {}
+  } else {
+    try {
+      detail = String(await upstream.text()).slice(0, 200)
+    } catch {}
+  }
+  return sendJson(res, 200, {
+    ok: upstream.ok,
+    status: upstream.status,
+    count,
+    error: upstream.ok ? undefined : `${friendlyError(upstream.status)}${detail ? ` — ${detail}` : ''}`,
   })
 }
