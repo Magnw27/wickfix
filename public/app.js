@@ -72,10 +72,10 @@ function loadProvider() {
   try {
     const p = JSON.parse(localStorage.getItem(PROVIDER_KEY))
     if (p && (p.mode === 'server' || p.mode === 'custom')) {
-      return { mode: p.mode, apiKey: String(p.apiKey || ''), baseUrl: String(p.baseUrl || '') }
+      return { mode: p.mode, apiKey: String(p.apiKey || ''), baseUrl: String(p.baseUrl || ''), model: String(p.model || '') }
     }
   } catch {}
-  return { mode: 'server', apiKey: '', baseUrl: '' }
+  return { mode: 'server', apiKey: '', baseUrl: '', model: '' }
 }
 function saveProvider(p) {
   localStorage.setItem(PROVIDER_KEY, JSON.stringify(p))
@@ -88,6 +88,14 @@ function saveModelPref(id) {
 }
 function isCustomProvider() {
   return loadProvider().mode === 'custom'
+}
+function renderProviderBadge() {
+  const badge = document.getElementById('provider-badge')
+  if (!badge) return
+  const p = loadProvider()
+  const show = p.mode === 'custom'
+  badge.classList.toggle('hidden', !show)
+  badge.textContent = show && p.baseUrl ? p.baseUrl.replace(/^https?:\/\//, '').split('/')[0] : 'custom'
 }
 function apiFetch(url, opts = {}) {
   const headers = new Headers(opts.headers || {})
@@ -1052,7 +1060,7 @@ function toggleSpeak(content, btn) {
   if (speechSynthesis.speaking && speakingMsgEl === btn) {
     speechSynthesis.cancel()
     speakingMsgEl = null
-    btn.classList.remove('text-brand-400')
+    btn.classList.remove('text-accent')
     const i = btn.querySelector('i')
     if (i) { i.setAttribute('data-lucide', 'volume-2'); lucide.createIcons() }
     return
@@ -1062,13 +1070,13 @@ function toggleSpeak(content, btn) {
   u.lang = 'id-ID'
   u.onend = () => {
     speakingMsgEl = null
-    btn.classList.remove('text-brand-400')
+    btn.classList.remove('text-accent')
     const i = btn.querySelector('i')
     if (i) { i.setAttribute('data-lucide', 'volume-2'); lucide.createIcons() }
   }
   speechSynthesis.speak(u)
   speakingMsgEl = btn
-  btn.classList.add('text-brand-400')
+  btn.classList.add('text-accent')
   const i = btn.querySelector('i')
   if (i) { i.setAttribute('data-lucide', 'square'); lucide.createIcons() }
 }
@@ -1499,6 +1507,8 @@ async function loadModels() {
   }
   renderModelOptions()
   renderCatalog()
+  fillSettingsDatalist()
+  renderProviderBadge()
 }
 
 function renderModelOptions() {
@@ -1633,17 +1643,17 @@ function addCustomModelOption(id) {
 function openCustomModel() {
   openModal(`
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-base font-semibold flex items-center gap-2"><i data-lucide="puzzle" class="size-5 text-brand-400"></i>Custom Model</h3>
+      <h3 class="text-base font-semibold flex items-center gap-2"><i data-lucide="puzzle" class="size-5 text-text-2"></i>Custom Model</h3>
       <button data-close class="p-1.5 rounded-lg text-text-3 hover:text-text hover:bg-surface-2"><i data-lucide="x" class="size-4"></i></button>
     </div>
     <div class="modal-field mb-4">
       <label for="custom-model-id">OpenRouter Model ID</label>
       <input id="custom-model-id" type="text" placeholder="mis. anthropic/claude-3.5-sonnet" autocomplete="off"
-        class="w-full bg-base-soft border border-border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 placeholder:text-text-3" />
+        class="w-full bg-base-soft border border-border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-text-3 placeholder:text-text-3" />
     </div>
     <div class="flex justify-end gap-2">
       <button data-close class="px-4 py-2 rounded-lg text-sm text-text-2 hover:bg-surface-2">Batal</button>
-      <button id="custom-apply" class="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-brand-500 to-indigo-500 text-white hover:brightness-110">Pakai model</button>
+      <button id="custom-apply" class="px-4 py-2 rounded-lg text-sm font-medium bg-white text-black hover:brightness-90">Pakai model</button>
     </div>
   `)
   const applyBtn = document.getElementById('custom-apply')
@@ -1666,17 +1676,17 @@ function openSystemPrompt() {
   const chat = ensureChat()
   openModal(`
     <div class="flex items-center justify-between mb-4">
-      <h3 class="text-base font-semibold flex items-center gap-2"><i data-lucide="bot" class="size-5 text-brand-400"></i>System Prompt</h3>
+      <h3 class="text-base font-semibold flex items-center gap-2"><i data-lucide="bot" class="size-5 text-text-2"></i>System Prompt</h3>
       <button data-close class="p-1.5 rounded-lg text-text-3 hover:text-text hover:bg-surface-2"><i data-lucide="x" class="size-4"></i></button>
     </div>
     <div class="modal-field mb-4">
       <label for="sys-prompt">Instruksi sistem untuk model (opsional)</label>
       <textarea id="sys-prompt" rows="5" placeholder="Contoh: Kamu adalah asisten yang ramah dan menjawab dalam Bahasa Indonesia."
-        class="w-full bg-base-soft border border-border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500/40 resize-none placeholder:text-text-3">${escapeHtml(chat.systemPrompt || '')}</textarea>
+        class="w-full bg-base-soft border border-border rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-text-3 resize-none placeholder:text-text-3">${escapeHtml(chat.systemPrompt || '')}</textarea>
     </div>
     <div class="flex justify-end gap-2">
       <button data-close class="px-4 py-2 rounded-lg text-sm text-text-2 hover:bg-surface-2">Batal</button>
-      <button id="sys-save" class="px-4 py-2 rounded-lg text-sm font-medium bg-gradient-to-r from-brand-500 to-indigo-500 text-white hover:brightness-110">Simpan</button>
+      <button id="sys-save" class="px-4 py-2 rounded-lg text-sm font-medium bg-white text-black hover:brightness-90">Simpan</button>
     </div>
   `)
   const saveBtn = document.getElementById('sys-save')
@@ -1809,8 +1819,11 @@ function openSettingsModal() {
       </div>
       <div class="modal-field">
         <label for="settings-model">Model</label>
-        <select id="settings-model" class="w-full bg-base-soft border border-border rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-text-3">${settingsModelOptions()}</select>
-        <p class="mt-1 text-[11px] text-text-3">Model untuk percakapan berikutnya.</p>
+        <input id="settings-model" type="text" list="settings-models" value="${escapeHtml(p.model || lastModel)}"
+          autocomplete="off" spellcheck="false" placeholder="ketik model ID sendiri — mis. anthropic/claude-sonnet-4"
+          class="w-full bg-base-soft border border-border rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-text-3 placeholder:text-text-3" />
+        <datalist id="settings-models"></datalist>
+        <p class="mt-1 text-[11px] text-text-3">Ketik bebas: ID model provider custom-mu, bukan daftar default.</p>
       </div>
       <button id="settings-test" type="button" class="settings-test-btn w-full">
         <i data-lucide="plug-zap" class="size-4"></i><span>Test koneksi</span>
@@ -1844,26 +1857,27 @@ function openSettingsModal() {
     if (e.target.value) selectModel(e.target.value, { silent: true })
   })
 
+  fillSettingsDatalist()
+
   document.getElementById('settings-test').addEventListener('click', testProvider)
   document.getElementById('settings-save').addEventListener('click', applySettings)
 }
 
-function settingsModelOptions() {
-  const opt = (id) => `<option value="${escapeHtml(id)}" ${id === lastModel ? 'selected' : ''}>${escapeHtml(shortModelName(id))} · ${id}</option>`
-  let html = ''
-  const free = allModels.filter((m) => m.free).slice(0, 40)
-  if (allModels.length) html += `<optgroup label="Free">${free.map((m) => opt(m.id)).join('')}</optgroup>`
-  if (!allModels.some((m) => m.id === lastModel)) html += opt(lastModel)
-  if (allModels.length) html += `<optgroup label="Semua model">${allModels.slice(0, 200).map((m) => opt(m.id)).join('')}</optgroup>`
-  return html
+function fillSettingsDatalist() {
+  const dl = document.getElementById('settings-models')
+  if (!dl) return
+  const list = allModels.slice(0, 250).map((m) => `<option value="${escapeHtml(m.id)}"></option>`).join('')
+  dl.innerHTML = list
 }
 
 function settingsInputs() {
   const active = modal.querySelector('[data-settings-mode].active')?.dataset.mode || 'server'
+  const modelEl = document.getElementById('settings-model')
   return {
     mode: active,
     apiKey: document.getElementById('settings-key') ? document.getElementById('settings-key').value.trim() : '',
     baseUrl: document.getElementById('settings-url') ? document.getElementById('settings-url').value.trim() : '',
+    model: modelEl ? modelEl.value.trim() : '',
   }
 }
 
@@ -1888,6 +1902,18 @@ async function testProvider() {
     if (data.ok) {
       result.classList.add('text-green-400')
       result.textContent = `OK — ${data.count || 0} model tersedia dari ${src}.`
+      try {
+        const mRes = await fetch('/api/models', { headers })
+        if (mRes.ok) {
+          const mData = await mRes.json()
+          if (Array.isArray(mData.models)) {
+            allModels = mData.models
+            renderModelOptions()
+            renderCatalog()
+            fillSettingsDatalist()
+          }
+        }
+      } catch {}
     } else {
       result.classList.add('text-red-400')
       result.textContent = (data.status ? `HTTP ${data.status} — ` : '') + (data.error || 'Tidak bisa terhubung ke provider.')
@@ -1908,11 +1934,13 @@ async function applySettings() {
     showToast('Isi API key dan/atau Base URL dulu (atau pilih Pakai server).', 'error')
     return
   }
+  if (s.mode === 'custom' && s.model) selectModel(s.model, { silent: true })
   saveProvider(s)
   closeModal()
   showToast('Settings disimpan. Memuat model ulang…', 'info')
   await loadModels()
-  if (allModels.length && !allModels.some((m) => m.id === lastModel)) {
+  renderProviderBadge()
+  if (s.mode !== 'custom' && allModels.length && !allModels.some((m) => m.id === lastModel)) {
     selectModel(allModels.find((m) => m.free)?.id || allModels[0].id, { silent: true })
   }
   showToast('Settings disimpan', 'success')
