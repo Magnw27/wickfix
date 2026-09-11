@@ -1504,11 +1504,22 @@ async function loadModels() {
     allModels = data.models || []
   } catch (e) {
     console.error('Gagal memuat model', e)
+    if (isCustomProvider()) allModels = []
   }
+  keepCustomModel()
   renderModelOptions()
   renderCatalog()
   fillSettingsDatalist()
   renderProviderBadge()
+}
+
+function keepCustomModel() {
+  const p = loadProvider()
+  if (p.mode !== 'custom' || !lastModel) return
+  if (allModels.some((m) => m.id === lastModel)) return
+  const meta = modelInfo(lastModel)
+  if (meta) return
+  allModels.unshift({ id: lastModel, name: shortModelName(lastModel), free: /:free$/i.test(lastModel), vision: false, custom: true })
 }
 
 function renderModelOptions() {
@@ -1542,9 +1553,13 @@ function renderModelList(query) {
     return
   }
 
+  const p = loadProvider()
+  const custom = p.mode === 'custom' ? modelInfo(lastModel) : null
+  if (custom) renderGroup('Custom model', [custom])
+
   const free = allModels.filter((m) => m.free).sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
   const popular = allModels.filter((m) => !m.free && RECOMMENDED_PREFIXES.some((p) => m.id.startsWith(p)))
-  const rest = allModels.filter((m) => !m.free && !popular.includes(m))
+  const rest = allModels.filter((m) => !m.free && !popular.includes(m) && m.id !== lastModel)
 
   renderGroup('Free models', [router, ...free])
   renderGroup('Popular', popular.slice(0, 8))
@@ -1908,6 +1923,7 @@ async function testProvider() {
           const mData = await mRes.json()
           if (Array.isArray(mData.models)) {
             allModels = mData.models
+            keepCustomModel()
             renderModelOptions()
             renderCatalog()
             fillSettingsDatalist()
