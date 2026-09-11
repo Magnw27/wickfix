@@ -13,7 +13,12 @@ const searchBtn = document.getElementById('search-btn')
 const imageBtn = document.getElementById('image-btn')
 const previewModal = document.getElementById('preview-modal')
 const previewFrame = document.getElementById('preview-frame')
-const modelSelect = document.getElementById('model-select')
+const modelPicker = document.getElementById('model-picker')
+const modelPickerName = document.getElementById('model-picker-name')
+const modelPickerDot = document.getElementById('model-picker-dot')
+const modelPopup = document.getElementById('model-popup')
+const modelList = document.getElementById('model-list')
+const modelSearch = document.getElementById('model-search')
 const chatList = document.getElementById('chat-list')
 const newChatBtn = document.getElementById('new-chat-btn')
 const sidebar = document.getElementById('sidebar')
@@ -33,6 +38,7 @@ const pageTitle = document.getElementById('page-title')
 
 /* ================= Constants & State ================= */
 const LS_KEY = 'openrouter-chats:v3'
+const FREE_ROUTER = 'openrouter/free'
 const RECOMMENDED_PREFIXES = ['openai/', 'anthropic/', 'google/gemini-', 'meta-llama/', 'mistralai/', 'deepseek/']
 const SUGGESTIONS = [
   { title: 'Explain quantum computing', desc: 'in simple terms' },
@@ -55,6 +61,7 @@ let micRecognition = null
 let micActive = false
 let cloudReady = false
 let cloudTimer = null
+let modelPopOpen = false
 
 /* ================= Routing & Auth (presentation layer) ================= */
 const ACCOUNTS_KEY = 'nexus-ai-accounts'
@@ -341,15 +348,36 @@ function isVisionCapable(id) {
   if (known) return !!known.vision
   return /vision|gemini|4o|omni|multimodal/i.test(String(id).toLowerCase())
 }
-function ensureModelOption(id) {
-  if (!modelSelect.querySelector(`option[value="${CSS.escape(id)}"]`)) {
-    const o = document.createElement('option')
-    o.value = id
-    o.textContent = id
-    modelSelect.appendChild(o)
-  }
-  modelSelect.value = id
+function modelInfo(id) {
+  return allModels.find((m) => m.id === id) || null
+}
+function isFreeId(id) {
+  const m = modelInfo(id)
+  if (m) return !!m.free
+  return /:free$|^openrouter\/free$/.test(String(id))
+}
+function shortModelName(id) {
+  if (id === FREE_ROUTER) return 'Free models router'
+  const m = modelInfo(id)
+  if (m && m.name) return m.name
+  const short = String(id).split('/').pop()
+  return short ? short.replace(/[:_]/g, ' ') : id
+}
+
+/* ---- Model picker UI ---- */
+function selectModel(id, opts = {}) {
   lastModel = id
+  modelPickerName.textContent = shortModelName(id)
+  modelPickerName.title = id
+  modelPickerDot.classList.toggle('free', isFreeId(id))
+  modelPickerDot.classList.toggle('paid', !isFreeId(id))
+  if (opts.silent !== true && modelPopOpen) renderModelList(modelSearch.value)
+  if (opts.toast) showToast(`Model: ${shortModelName(id)}`, 'success')
+}
+function ensureModelOption(id) {
+  selectModel(id)
+  const m = modelInfo(id)
+  showToast(`Switched to ${m ? m.name : id}`, 'success')
 }
 
 /* ================= Utils ================= */
@@ -852,7 +880,7 @@ function addFile(file) {
     })
     renderAttachments()
     updateControls()
-    if (file.type && file.type.startsWith('image/') && !isVisionCapable(modelSelect.value)) {
+    if (file.type && file.type.startsWith('image/') && !isVisionCapable(lastModel)) {
       ensureModelOption(FREE_VISION_MODEL)
       showToast('Gambar terdeteksi — model dialihkan ke model vision gratis', 'info')
     }
@@ -1224,7 +1252,7 @@ async function askSvg(prompt, contentDiv) {
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages, model: modelSelect.value, max_tokens: 3000 }),
+      body: JSON.stringify({ messages, model: lastModel, max_tokens: 3000 }),
       signal: ctrl.signal,
     })
     if (!res.ok) return ''
@@ -1327,7 +1355,7 @@ async function ask(chat, requestMessages) {
     const res = await fetchWithRetry('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: requestMessages || buildRequestMessages(chat), model: modelSelect.value, max_tokens: 4096 }),
+      body: JSON.stringify({ messages: requestMessages || buildRequestMessages(chat), model: lastModel, max_tokens: 4096 }),
       signal: abortCtrl.signal,
     })
 
@@ -1436,62 +1464,132 @@ async function loadModels() {
 }
 
 function renderModelOptions() {
-  const prev = modelSelect.value && modelSelect.value !== '__custom__' ? modelSelect.value : lastModel
-  const free = allModels.filter((m) => m.free)
-  const recommended = allModels
-    .filter((m) => RECOMMENDED_PREFIXES.some((p) => m.id.startsWith(p)))
-    .slice(0, 10)
-
-  modelSelect.innerHTML = ''
-
-  const addOption = (value, label) => {
-    const o = document.createElement('option')
-    o.value = value
-    o.textContent = label
-    modelSelect.appendChild(o)
-  }
-  const addGroup = (label, list) => {
-    if (!list.length) return
-    const g = document.createElement('optgroup')
-    g.label = label
-    for (const m of list) {
-      const o = document.createElement('option')
-      o.value = m.id
-      o.textContent = m.name
-      g.appendChild(o)
-    }
-    modelSelect.appendChild(g)
-  }
-
-  addGroup('Recommended', recommended)
-  addGroup(`Free (${free.length})`, free)
-  addGroup(`All models (${allModels.length})`, allModels)
-  addOption('__custom__', 'Custom model…')
-
-  const fallback = recommended[0] ? recommended[0].id : 'openrouter/free'
-  const target = prev && modelSelect.querySelector(`option[value="${CSS.escape(prev)}"]`) ? prev : fallback
-  modelSelect.value = target
-  lastModel = modelSelect.value
+  selectModel(lastModel, { silent: true })
+  renderModelList('')
 }
 
-modelSelect.addEventListener('change', () => {
-  if (modelSelect.value === '__custom__') {
-    modelSelect.value = lastModel
-    openCustomModel()
+function renderModelList(query) {
+  const q = (query || '').trim().toLowerCase()
+  modelList.innerHTML = ''
+  const router = modelInfo(FREE_ROUTER) || { id: FREE_ROUTER, name: shortModelName(FREE_ROUTER), free: true, vision: false }
+
+  if (q) {
+    const items = allModels
+      .filter((m) => m.id.toLowerCase().includes(q) || (m.name || '').toLowerCase().includes(q))
+      .sort((a, b) => a.id.localeCompare(b.id))
+    if (FREE_ROUTER.includes(q) || 'free models router'.includes(q)) items.unshift(router)
+    if (!items.length) {
+      modelList.innerHTML = '<div class="model-empty">No matching models.</div>'
+      lucide.createIcons()
+      return
+    }
+    items.forEach((m) => modelList.appendChild(modelItem(m)))
+    lucide.createIcons()
     return
   }
-  lastModel = modelSelect.value
+
+  if (!allModels.length) {
+    modelList.innerHTML = '<div class="model-empty">Models are loading…</div>'
+    lucide.createIcons()
+    return
+  }
+
+  const free = allModels.filter((m) => m.free).sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id))
+  const popular = allModels.filter((m) => !m.free && RECOMMENDED_PREFIXES.some((p) => m.id.startsWith(p)))
+  const rest = allModels.filter((m) => !m.free && !popular.includes(m))
+
+  renderGroup('Free models', [router, ...free])
+  renderGroup('Popular', popular.slice(0, 8))
+  renderGroup(`All models (${allModels.length})`, rest.slice(0, 120))
+  lucide.createIcons()
+}
+
+function renderGroup(label, list) {
+  if (!list.length) return
+  const head = document.createElement('div')
+  head.className = 'model-group-head'
+  head.textContent = label
+  modelList.appendChild(head)
+  list.forEach((m) => modelList.appendChild(modelItem(m)))
+}
+
+function modelItem(m) {
+  const row = document.createElement('button')
+  row.type = 'button'
+  row.className = 'model-item' + (m.id === lastModel ? ' active' : '')
+  row.setAttribute('role', 'option')
+  row.setAttribute('aria-selected', String(m.id === lastModel))
+  const dot = document.createElement('span')
+  dot.className = 'model-picker-dot ' + (m.free ? 'free' : 'paid')
+  const main = document.createElement('span')
+  main.className = 'model-item-main'
+  const nm = document.createElement('span')
+  nm.className = 'model-item-name'
+  nm.textContent = m.id === FREE_ROUTER ? shortModelName(m.id) : (m.name || m.id)
+  main.appendChild(nm)
+  const idLine = document.createElement('span')
+  idLine.className = 'model-item-id'
+  idLine.textContent = m.id
+  const chips = document.createElement('span')
+  chips.className = 'model-item-chips'
+  if (m.free) chips.appendChild(labelChip('free', 'free'))
+  if (m.vision) chips.appendChild(labelChip('vision', 'vision'))
+  row.append(dot, main, chips)
+  row.title = m.id
+  row.addEventListener('click', () => {
+    selectModel(m.id, { toast: true })
+    renderModelList(modelSearch.value || '')
+    closePopup()
+  })
+  return row
+}
+
+function labelChip(text, kind) {
+  const c = document.createElement('span')
+  c.className = 'model-chip ' + kind
+  c.textContent = text
+  return c
+}
+
+/* ---- Popup open / close / search / outside-click ---- */
+function openPopup() {
+  modelPopOpen = true
+  modelPopup.classList.remove('hidden')
+  modelPicker.setAttribute('aria-expanded', 'true')
+  modelSearch.value = ''
+  renderModelList('')
+  setTimeout(() => modelSearch.focus(), 40)
+}
+function closePopup() {
+  if (!modelPopOpen) return
+  modelPopOpen = false
+  modelPopup.classList.add('hidden')
+  modelPicker.setAttribute('aria-expanded', 'false')
+}
+modelPicker.addEventListener('click', (e) => {
+  e.stopPropagation()
+  modelPopOpen ? closePopup() : openPopup()
+})
+modelPopup.addEventListener('click', (e) => e.stopPropagation())
+document.getElementById('model-popup-close').addEventListener('click', closePopup)
+modelSearch.addEventListener('input', () => renderModelList(modelSearch.value))
+modelSearch.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closePopup()
+})
+document.addEventListener('click', (e) => {
+  if (modelPopOpen && !modelPopup.contains(e.target) && e.target !== modelPicker) closePopup()
+})
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closePopup()
+})
+document.getElementById('model-custom-btn')?.addEventListener('click', () => {
+  closePopup()
+  openCustomModel()
 })
 
 function addCustomModelOption(id) {
-  if (!modelSelect.querySelector(`option[value="${CSS.escape(id)}"]`)) {
-    const o = document.createElement('option')
-    o.value = id
-    o.textContent = id
-    modelSelect.appendChild(o)
-  }
-  modelSelect.value = id
-  lastModel = id
+  selectModel(id)
+  renderModelList(modelSearch.value || '')
 }
 
 function openCustomModel() {

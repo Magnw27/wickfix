@@ -27,7 +27,7 @@ export const config = {
   port: Number(process.env.PORT || 8000),
   openRouterBase: (process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1').replace(/\/+$/, ''),
   apiKey: process.env.OPENROUTER_API_KEY || '',
-  appTitle: process.env.APP_TITLE || 'AI Chat',
+  appTitle: process.env.APP_TITLE || 'WickAI',
   appReferer: process.env.APP_REFERER || '',
   defaultModel: process.env.DEFAULT_MODEL || 'openrouter/free',
   defaultImageModel: process.env.DEFAULT_IMAGE_MODEL || 'google/gemini-2.5-flash-image',
