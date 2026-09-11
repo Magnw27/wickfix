@@ -1,5 +1,6 @@
 /* WickAI stylesheet entrypoint.
- * The original stylesheet is preserved as base.css; this layer keeps the UI easy to evolve without a risky rewrite.
+ * Original styles stay in base.css; later layers are additive and reversible.
  */
 @import url('/base.css?v=10');
 @import url('/responsive.css?v=1');
+@import url('/ui-enhancements.css?v=1');
