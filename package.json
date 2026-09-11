@@ -1,7 +1,7 @@
 {
   "name": "wickfix",
-  "version": "1.0.0",
-  "description": "WickAI — AI chat powered by OpenRouter",
+  "version": "1.1.0",
+  "description": "WickAI — AI platform powered by OpenRouter",
   "main": "server.js",
   "type": "module",
   "engines": {
@@ -9,9 +9,10 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "test": "node --test test/*.test.js"
   },
-  "keywords": [],
+  "keywords": ["ai", "chat", "openrouter", "wickai"],
   "author": "",
   "license": "ISC"
 }
