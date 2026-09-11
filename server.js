@@ -209,46 +209,47 @@ async function handleChat(req, res) {
 /* ------------------------------------------------------------------ */
 const modelsCache = { data: null, at: 0 }
 
+const FALLBACK_MODELS = [
+  { id: 'openrouter/free', name: 'Free Models Router', free: true, vision: false },
+  { id: 'openai/gpt-4o-mini', name: 'GPT-4o Mini', free: false, vision: true },
+  { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', free: false, vision: true },
+  { id: 'google/gemini-3.1-flash-image', name: 'Gemini 3.1 Flash Image', free: false, vision: true },
+  { id: 'google/gemma-4-31b-it:free', name: 'Gemma 4 31B (free)', free: true, vision: true },
+  { id: 'nex-agi/nex-n2.5-mini:free', name: 'Nex N2.5 Mini (free)', free: true, vision: true },
+].sort((a, b) => a.id.localeCompare(b.id))
+
 async function handleModels(req, res) {
   const now = Date.now()
   if (modelsCache.data && now - modelsCache.at < config.modelsCacheTtlMs) {
     return sendJson(req, res, 200, { models: modelsCache.data })
   }
 
+  let models = null
   let upstream
   try {
     upstream = await fetchModels()
-  } catch {
-    if (modelsCache.data) return sendJson(req, res, 200, { models: modelsCache.data })
-    return sendError(req, res, 502, 'Gagal terhubung ke provider.')
-  }
+    if (upstream.ok) {
+      const json = await upstream.json()
+      const list = (json.data || [])
+        .map((m) => {
+          const p = m.pricing || {}
+          const arch = m.architecture || {}
+          const inText = !arch.input_modalities || arch.input_modalities.includes('text')
+          const outText = !arch.output_modalities || arch.output_modalities.includes('text')
+          const free = (Number(p.prompt) === 0 && Number(p.completion) === 0) || /:free$/.test(m.id || '')
+          const vision = !!(m.capabilities && m.capabilities.vision) || /vision|multimodal|vl$/i.test(m.id || '')
+          return { id: m.id, name: m.name || m.id, free, vision, chat: inText && outText }
+        })
+        .filter((m) => m.chat)
+        .map(({ chat, ...m }) => m)
+        .sort((a, b) => a.id.localeCompare(b.id))
+      if (list.length) models = list
+    }
+  } catch {}
 
-  if (!upstream.ok) {
-    if (modelsCache.data) return sendJson(req, res, 200, { models: modelsCache.data })
-    return sendError(req, res, upstream.status, friendlyError(upstream.status))
+  if (!models) {
+    models = FALLBACK_MODELS
   }
-
-  let json
-  try {
-    json = await upstream.json()
-  } catch {
-    if (modelsCache.data) return sendJson(req, res, 200, { models: modelsCache.data })
-    return sendError(req, res, 502, 'Respons daftar model tidak valid.')
-  }
-
-  const models = (json.data || [])
-    .map((m) => {
-      const p = m.pricing || {}
-      const arch = m.architecture || {}
-      const inText = !arch.input_modalities || arch.input_modalities.includes('text')
-      const outText = !arch.output_modalities || arch.output_modalities.includes('text')
-      const free = (Number(p.prompt) === 0 && Number(p.completion) === 0) || /:free$/.test(m.id || '')
-      const vision = !!(m.capabilities && m.capabilities.vision) || /vision|multimodal|vl$/i.test(m.id || '')
-      return { id: m.id, name: m.name || m.id, free, vision, chat: inText && outText }
-    })
-    .filter((m) => m.chat)
-    .map(({ chat, ...m }) => m)
-    .sort((a, b) => a.id.localeCompare(b.id))
 
   modelsCache.data = models
   modelsCache.at = now

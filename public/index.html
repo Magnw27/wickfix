@@ -1,457 +1,242 @@
 <!DOCTYPE html>
-<html lang="id" class="dark">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="theme-color" content="#0a0a12" />
+  <meta name="theme-color" content="#0a0a0a" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title id="page-title">WickAI — Asisten AI kelas dunia</title>
-  <meta name="description" content="WickAI — chat AI premium dengan streaming real-time, multi-model, vision, web search, dan kode." />
-  <meta name="theme-color" content="#0a0a12" />
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>✨</text></svg>" />
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource-variable/geist/index.css" />
+  <title id="page-title">WickAI — AI Chat</title>
+  <meta name="description" content="WickAI — a clean AI chat powered by OpenRouter. One interface, every model: GPT, Claude, Gemini and more." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="icon" type="image/png" href="/logo.png" />
+  <link rel="apple-touch-icon" href="/logo.png" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.css" />
-  <link rel="stylesheet" href="/style.css?v=7" />
+  <link rel="stylesheet" href="/style.css?v=6" />
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            brand: { 400: '#a78bfa', 500: '#8b5cf6', 600: '#7c3aed' },
-            accent: '#22d3ee',
-            base: { DEFAULT: '#0a0a12', soft: '#12121c' },
-            surface: { DEFAULT: 'rgba(255,255,255,0.04)', 2: 'rgba(255,255,255,0.06)' },
-            border: 'rgba(255,255,255,0.08)',
-            text: { DEFAULT: '#f4f4f5', 2: '#a3a3ad', 3: '#6b6b76' },
-          },
-          fontFamily: { sans: ['Geist Variable', 'Geist', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
-        },
-      },
+      theme: { extend: { colors: {
+        base: '#0a0a0a', soft: '#0f0f0f',
+        surface: '#151515', surface2: '#1c1c1c',
+        border: 'rgba(255,255,255,0.09)', border2: 'rgba(255,255,255,0.18)',
+        text: { DEFAULT: '#ededed', 2: '#9a9a9a', 3: '#5f5f5f' },
+      }, fontFamily: { sans: ['Inter','system-ui','sans-serif'], mono: ['ui-monospace','SFMono-Regular','Menlo','Consolas','monospace'] } } }
     }
   </script>
 </head>
 <body class="bg-base text-text antialiased font-sans">
-  <div id="scroll-progress" class="fixed left-0 top-0 z-[70] h-[2px] w-0 bg-gradient-to-r from-brand-500 via-indigo-400 to-accent transition-[width] duration-150 ease-out"></div>
-
   <!-- ============================================================
-       HALAMAN 1 : LANDING
+       NAV
+  ============================================================ -->
+  <nav id="top-nav" class="fixed inset-x-0 top-0 z-40 transition-all duration-300">
+    <div class="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
+      <a href="/" data-nav class="flex items-center gap-2.5">
+        <span class="logo-mark logo-img"><img src="/logo.png" alt="WickAI logo" /></span>
+        <span class="text-sm font-semibold tracking-tight">Wick<span class="text-text-2">AI</span></span>
+      </a>
+      <div class="hidden items-center gap-1 md:flex">
+        <a href="/" data-nav data-page="landing-page" class="nav-link">Home</a>
+        <a href="/chat" data-nav data-page="chat-page" class="nav-link">Chat</a>
+        <a href="/catalog" data-nav data-page="catalog-page" class="nav-link">Models</a>
+        <a href="/docs" data-nav data-page="docs-page" class="nav-link">Docs</a>
+        <a href="/chat" data-nav class="btn btn-primary btn-sm ml-3">Start chat</a>
+      </div>
+      <button id="mobile-menu-btn" class="icon-btn md:hidden" aria-label="Menu">
+        <i data-lucide="menu" class="size-5"></i>
+      </button>
+    </div>
+    <div id="mobile-menu" class="hidden border-t border-border bg-base/95 px-4 py-3 md:hidden backdrop-blur-xl">
+      <a href="/" data-nav data-page="landing-page" class="nav-link block py-2.5">Home</a>
+      <a href="/chat" data-nav data-page="chat-page" class="nav-link block py-2.5">Chat</a>
+      <a href="/catalog" data-nav data-page="catalog-page" class="nav-link block py-2.5">Models</a>
+      <a href="/docs" data-nav data-page="docs-page" class="nav-link block py-2.5">Docs</a>
+    </div>
+  </nav>
+
+ <!-- ============================================================
+       LANDING
   ============================================================ -->
   <div id="landing-page" class="page">
-    <div class="landing-bg" aria-hidden="true">
-      <div class="blob blob-a"></div>
-      <div class="blob blob-b"></div>
-      <div class="blob blob-c"></div>
-      <div class="grid-overlay"></div>
+    <div class="landing-bg" aria-hidden="true"></div>
+    <div class="atmos" aria-hidden="true">
+      <div class="grid"></div>
+      <div class="orb o1"></div>
+      <div class="orb o2"></div>
+      <div class="orb o3"></div>
+      <div class="grain"></div>
     </div>
 
-    <!-- Navbar -->
-    <nav id="landing-nav" class="fixed inset-x-0 top-0 z-40 transition-all duration-300">
-      <div class="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
-        <a href="/" data-nav class="flex items-center gap-2.5">
-          <span class="logo-mark" aria-hidden="true"><i data-lucide="sparkles" class="size-4"></i></span>
-          <span class="text-lg font-semibold tracking-tight">Wick<span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent">AI</span></span>
-        </a>
-        <div class="hidden items-center gap-1 md:flex">
-          <a href="#fitur" class="nav-link">Fitur</a>
-          <a href="#cara-kerja" class="nav-link">Cara Kerja</a>
-          <a href="#testimoni" class="nav-link">Testimoni</a>
-          <a href="#harga" class="nav-link">Harga</a>
+    <main class="relative z-10">
+      <section class="mx-auto max-w-6xl px-4 pt-32 pb-16 sm:px-6 sm:pt-40">
+        <div class="mx-auto max-w-3xl text-center">
+          <span class="hero-badge"><span class="dot"></span> Powered by OpenRouter &middot; 400+ models</span>
+          <h1 class="hero-title mt-8">
+            One chat.<br />
+            <span class="text-text-2">Every model.</span>
+          </h1>
+          <p class="hero-sub mx-auto mt-6 max-w-xl">
+            Talk to frontier and open-source AI — GPT, Claude, Gemini, Llama and more —
+            through one clean interface. No keys, no terminals. Just chat.
+          </p>
+          <div class="hero-cta-row mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a href="/chat" data-nav data-page="chat-page" class="btn btn-primary btn-lg hero-cta w-full sm:w-auto">
+              <i data-lucide="message-circle" class="size-4"></i> Start chatting
+            </a>
+            <a href="/catalog" data-nav data-page="catalog-page" class="btn btn-ghost btn-lg hero-cta w-full sm:w-auto">
+              <i data-lucide="layout-grid" class="size-4"></i> Browse models
+            </a>
+          </div>
+          <div class="hero-stats mt-14 flex items-center justify-center gap-6 sm:gap-12">
+            <div class="hero-stat"><strong>400+</strong><span>models</span></div>
+            <div class="h-8 w-px bg-border"></div>
+            <div class="hero-stat"><strong>20+</strong><span>free to use</span></div>
+            <div class="h-8 w-px bg-border"></div>
+            <div class="hero-stat"><strong>SSE</strong><span>streaming answers</span></div>
+          </div>
         </div>
-        <div class="flex items-center gap-2">
-          <a href="/auth" data-nav class="btn btn-ghost hidden sm:inline-flex">Masuk</a>
-          <a href="/auth" data-nav class="btn btn-primary">Mulai Sekarang</a>
+
+        <!-- Chat mock -->
+        <div class="mx-auto mt-14 max-w-2xl">
+          <div class="mock-chat">
+            <div class="flex items-center justify-between border-b border-border px-4 py-3">
+              <div class="flex items-center gap-2">
+                <span class="logo-mark logo-img"><img src="/logo.png" alt="" /></span>
+                <p class="text-sm font-semibold">WickAI</p>
+              </div>
+              <span class="flex items-center gap-1.5 text-xs text-green-400">
+                <span class="size-1.5 rounded-full bg-green-400"></span> Online
+              </span>
+            </div>
+            <div class="space-y-3 p-5">
+              <div class="flex items-end gap-2">
+                <span class="ai-avatar"><i data-lucide="sparkles" class="size-3"></i></span>
+                <div class="mock-bubble ai">Hi — I can help you write, code, explain, and more. What do you need?</div>
+              </div>
+              <div class="flex justify-end"><div class="mock-bubble user">explain black holes in 10 words</div></div>
+              <div class="flex items-end gap-2">
+                <span class="ai-avatar"><i data-lucide="sparkles" class="size-3"></i></span>
+                <div class="mock-bubble ai">Cosmic gravity drains — not even light escapes them.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Model marquee -->
+      <div class="px-4 sm:px-6">
+        <div class="marquee mx-auto max-w-6xl border-y border-border py-3" aria-hidden="true">
+          <div class="marquee-track">
+            <span>GPT-4o</span><span>Claude 3.5 Sonnet</span><span>Gemini 2.5 Flash</span><span>Llama 3.3 70B</span><span>DeepSeek V3</span><span>Mistral Small</span><span>Qwen 2.5</span><span>GPT-4o Mini</span><span>Claude Haiku</span><span>Gemma 3</span><span>Gemini 3 Pro</span><span>Nex N2.5</span>
+            <span>GPT-4o</span><span>Claude 3.5 Sonnet</span><span>Gemini 2.5 Flash</span><span>Llama 3.3 70B</span><span>DeepSeek V3</span><span>Mistral Small</span><span>Qwen 2.5</span><span>GPT-4o Mini</span><span>Claude Haiku</span><span>Gemma 3</span><span>Gemini 3 Pro</span><span>Nex N2.5</span>
+          </div>
         </div>
       </div>
-    </nav>
 
-    <main>
-      <!-- Hero -->
-      <section class="relative mx-auto max-w-6xl px-4 pt-36 pb-20 sm:px-6 sm:pt-44">
-        <div class="reveal mx-auto max-w-3xl text-center">
-          <span class="hero-badge"><i data-lucide="zap" class="size-3.5"></i> Streaming real-time • Multi-model • Gratis</span>
-          <h1 class="hero-title mt-6">
-            Percakapan dengan AI yang<br class="hidden sm:block" />
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 via-indigo-400 to-accent">terasa ajaib</span>
-          </h1>
-          <p class="hero-sub mx-auto mt-6 max-w-xl text-lg text-text-2">
-            Chat AI premium untuk bekerja, belajar, dan berkreasi. Respon seketika, vision,
-            web search, dan preview kode — semua dalam satu tempat yang indah.
-          </p>
-          <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <a href="/auth" data-nav class="btn btn-primary btn-lg w-full sm:w-auto hero-cta">
-              <i data-lucide="rocket" class="size-4"></i> Mulai Sekarang
-            </a>
-            <a href="#fitur" class="btn btn-ghost btn-lg w-full sm:w-auto hero-cta">
-              <i data-lucide="play" class="size-4"></i> Lihat Demo
-            </a>
-          </div>
-          <div class="mt-12 flex items-center justify-center gap-4 sm:gap-10 flex-wrap">
-            <div class="hero-stat"><strong>178+</strong><span>Model AI</span></div>
-            <div class="hero-stat"><strong>&lt;1s</strong><span>First token</span></div>
-            <div class="hero-stat"><strong>100%</strong><span>Gratis</span></div>
-          </div>
+      <!-- Features -->
+      <section class="mx-auto max-w-4xl px-4 pb-16 sm:px-6">
+        <div class="flex items-baseline justify-between border-b border-border pb-4">
+          <span class="micro">Features</span>
         </div>
-
-        <!-- Mock chat preview -->
-        <div class="reveal mx-auto mt-16 max-w-2xl" style="transition-delay:.15s">
-          <div class="mock-chat glass">
-            <div class="flex items-center gap-2 border-b border-border px-4 py-3">
-              <div class="flex gap-1.5"><span class="size-2.5 rounded-full bg-rose-500/70"></span><span class="size-2.5 rounded-full bg-amber-400/70"></span><span class="size-2.5 rounded-full bg-emerald-500/70"></span></div>
-              <p class="ml-2 text-xs font-medium text-text-2">WickAI — chat</p>
-            </div>
-            <div class="space-y-3 p-4">
-              <div class="flex items-end gap-2">
-                <span class="ai-avatar"><i data-lucide="sparkles" class="size-3"></i></span>
-                <div class="mock-bubble ai">Halo! 👋 Ada yang bisa saya bantu hari ini?</div>
-              </div>
-              <div class="flex justify-end"><div class="mock-bubble user">Jelaskan black hole dengan analogi sederhana!</div></div>
-              <div class="flex items-end gap-2">
-                <span class="ai-avatar"><i data-lucide="sparkles" class="size-3"></i></span>
-                <div class="mock-bubble ai">Bayangkan black hole seperti <strong>selokan raksasa di ruang angkasa</strong> — semua yang mendekat, termasuk cahaya, akan tersedot ke dalamnya. 🕳️</div>
-              </div>
-              <div class="typing" aria-hidden="true"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
-            </div>
-          </div>
-        </div>
+        <div class="feature-row reveal"><span class="num">01</span><div><h3>Real-time streaming</h3><p>Answers appear token by token as they are generated — no waiting for the full response.</p></div></div>
+        <div class="feature-row reveal" data-delay="1"><span class="num">02</span><div><h3>Every major model</h3><p>Switch between GPT, Claude, Gemini, Llama, DeepSeek and hundreds more from the model picker.</p></div></div>
+        <div class="feature-row reveal" data-delay="2"><span class="num">03</span><div><h3>Vision &amp; file attachment</h3><p>Drop in images or documents. Vision-capable models are selected automatically.</p></div></div>
+        <div class="feature-row reveal" data-delay="3"><span class="num">04</span><div><h3>Web search</h3><p>Toggle search to pull fresh results into the conversation before the model answers.</p></div></div>
+        <div class="feature-row reveal" data-delay="4"><span class="num">05</span><div><h3>Code with preview</h3><p>HTML, CSS, SVG, and JavaScript blocks open in a live sandboxed preview.</p></div></div>
+        <div class="feature-row reveal" data-delay="5"><span class="num">06</span><div><h3>Private by default</h3><p>Conversations are saved locally in your browser and sync only if you enable it.</p></div></div>
       </section>
 
-      <!-- Fitur -->
-      <section id="fitur" class="relative mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <div class="reveal mx-auto max-w-2xl text-center">
-          <span class="section-tag">Fitur</span>
-          <h2 class="section-title">Semua yang kamu butuhkan, <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent">dalam satu app</span></h2>
-          <p class="mt-4 text-text-2">Didesain untuk produktivitas maksimal — dari menulis kode sampai riset mendalam.</p>
-        </div>
-        <div class="mt-12 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          <div class="feature-card reveal">
-            <span class="feature-icon violet"><i data-lucide="zap" class="size-5"></i></span>
-            <h3>Streaming real-time</h3>
-            <p>Jawaban muncul token demi token tanpa menunggu — terasa seperti sedang ngobrol.</p>
-          </div>
-          <div class="feature-card reveal" style="transition-delay:.05s">
-            <span class="feature-icon indigo"><i data-lucide="cpu" class="size-5"></i></span>
-            <h3>Multi-model</h3>
-            <p>178+ model dalam satu klik: dari yang ringan hingga super-reasoning.</p>
-          </div>
-          <div class="feature-card reveal" style="transition-delay:.1s">
-            <span class="feature-icon cyan"><i data-lucide="image" class="size-5"></i></span>
-            <h3>Vision & upload</h3>
-            <p>Lampirkan gambar atau file, AI memahaminya langsung — vision bawaan.</p>
-          </div>
-          <div class="feature-card reveal">
-            <span class="feature-icon emerald"><i data-lucide="globe" class="size-5"></i></span>
-            <h3>Web search</h3>
-            <p>Jawaban berbasis informasi terbaru dari internet dengan sumber yang jelas.</p>
-          </div>
-          <div class="feature-card reveal" style="transition-delay:.05s">
-            <span class="feature-icon amber"><i data-lucide="code-2" class="size-5"></i></span>
-            <h3>Kode & live preview</h3>
-            <p>Hasilkan HTML/JS/CSS lalu jalankan langsung di panel preview — tanpa setup.</p>
-          </div>
-          <div class="feature-card reveal" style="transition-delay:.1s">
-            <span class="feature-icon rose"><i data-lucide="mic" class="size-5"></i></span>
-            <h3>Input suara</h3>
-            <p>Ketik dengan suara dan dengarkan jawaban AI dibacakan untukmu.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Cara Kerja -->
-      <section id="cara-kerja" class="relative mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <div class="reveal mx-auto max-w-2xl text-center">
-          <span class="section-tag">Cara Kerja</span>
-          <h2 class="section-title">Mulai dalam <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent">3 langkah mudah</span></h2>
-        </div>
-        <div class="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <div class="step reveal">
-            <span class="step-num">1</span>
-            <h3>Buka Halaman Utama</h3>
-            <p>Jelajahi fitur dan rasakan tampilan premium WickAI.</p>
-          </div>
-          <div class="step reveal" style="transition-delay:.08s">
-            <span class="step-num">2</span>
-            <h3>Login / Daftar</h3>
-            <p>Buat akun atau masuk dalam hitungan detik — gratis tanpa kartu kredit.</p>
-          </div>
-          <div class="step reveal" style="transition-delay:.16s">
-            <span class="step-num">3</span>
-            <h3>Mulai Chat</h3>
-            <p>Langsung ngobrol dengan AI, upload file, cari di web, atau generate gambar.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Testimoni -->
-      <section id="testimoni" class="relative mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <div class="reveal mx-auto max-w-2xl text-center">
-          <span class="section-tag">Testimoni</span>
-          <h2 class="section-title">Dipercaya ribuan pengguna</h2>
-        </div>
-        <div class="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
-          <div class="testimonial-card reveal">
-            <div class="stars"><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i></div>
-            <p class="mt-4 text-sm leading-relaxed text-text-2">"Streaming-nya mulus banget dan preview kodenya langsung jalan. Rasanya seperti ChatGPT premium."</p>
-            <div class="mt-5 flex items-center gap-3">
-              <span class="avatar violet">RA</span>
-              <div><p class="text-sm font-medium">Raka Aditya</p><p class="text-xs text-text-3">Frontend Engineer</p></div>
-            </div>
-          </div>
-          <div class="testimonial-card reveal" style="transition-delay:.08s">
-            <div class="stars"><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i></div>
-            <p class="mt-4 text-sm leading-relaxed text-text-2">"Web search-nya beneran cari info terbaru. Buat riset tugas kuliah jadi jauh lebih cepat."</p>
-            <div class="mt-5 flex items-center gap-3">
-              <span class="avatar cyan">SN</span>
-              <div><p class="text-sm font-medium">Salsabila Nur</p><p class="text-xs text-text-3">Mahasiswa</p></div>
-            </div>
-          </div>
-          <div class="testimonial-card reveal" style="transition-delay:.16s">
-            <div class="stars"><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i><i data-lucide="star" class="size-4 fill-amber-400 text-amber-400"></i></div>
-            <p class="mt-4 text-sm leading-relaxed text-text-2">"Upload gambar lalu minta AI menjelaskan isinya — akurat dan cepat. UI-nya juga kece."</p>
-            <div class="mt-5 flex items-center gap-3">
-              <span class="avatar indigo">DW</span>
-              <div><p class="text-sm font-medium">Dimas Wijaya</p><p class="text-xs text-text-3">Product Manager</p></div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Pricing -->
-      <section id="harga" class="relative mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <div class="reveal mx-auto max-w-2xl text-center">
-          <span class="section-tag">Harga</span>
-          <h2 class="section-title">Mulai gratis, <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent">naik kapan saja</span></h2>
-        </div>
-        <div class="mt-12 grid grid-cols-1 gap-5 md:grid-cols-3">
-          <div class="price-card reveal">
-            <h3>Gratis</h3>
-            <p class="price">Rp0<span>/bulan</span></p>
-            <ul class="price-list">
-              <li><i data-lucide="check" class="size-4 text-emerald-400"></i> Akses model gratis</li>
-              <li><i data-lucide="check" class="size-4 text-emerald-400"></i> 30 chat / menit</li>
-              <li><i data-lucide="check" class="size-4 text-emerald-400"></i> Web search & vision</li>
-            </ul>
-            <a href="/auth" data-nav class="btn btn-ghost w-full">Mulai</a>
-          </div>
-          <div class="price-card featured reveal" style="transition-delay:.08s">
-            <span class="popular">Paling Populer</span>
-            <h3>Pro</h3>
-            <p class="price">Rp49rb<span>/bulan</span></p>
-            <ul class="price-list">
-              <li><i data-lucide="check" class="size-4 text-emerald-400"></i> Semua model premium</li>
-              <li><i data-lucide="check" class="size-4 text-emerald-400"></i> Tanpa batas chat</li>
-              <li><i data-lucide="check" class="size-4 text-emerald-400"></i> Prioritas & generasi gambar</li>
-            </ul>
-            <a href="/auth" data-nav class="btn btn-primary w-full">Pilih Pro</a>
-          </div>
-          <div class="price-card reveal" style="transition-delay:.16s">
-            <h3>Tim</h3>
-            <p class="price">Rp99rb<span>/bulan</span></p>
-            <ul class="price-list">
-              <li><i data-lucide="check" class="size-4 text-emerald-400"></i> Semua fitur Pro</li>
-              <li><i data-lucide="check" class="size-4 text-emerald-400"></i> Kolaborasi tim</li>
-              <li><i data-lucide="check" class="size-4 text-emerald-400"></i> Manajemen akun</li>
-            </ul>
-            <a href="/auth" data-nav class="btn btn-ghost w-full">Hubungi</a>
-          </div>
-        </div>
-      </section>
-
-      <!-- CTA akhir -->
-      <section class="relative mx-auto max-w-6xl px-4 py-20 sm:px-6">
-        <div class="cta-panel reveal">
-          <div class="mx-auto max-w-2xl text-center">
-            <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Siap merasakan AI yang <span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent">berbeda?</span></h2>
-            <p class="mt-4 text-text-2">Gratis selamanya. Tidak perlu kartu kredit.</p>
-            <a href="/auth" data-nav class="btn btn-primary btn-lg mt-8"><i data-lucide="rocket" class="size-4"></i> Mulai Sekarang — Gratis</a>
+      <!-- CTA -->
+      <section class="mx-auto max-w-6xl px-4 pb-20 sm:px-6 reveal">
+        <div class="cta-panel">
+          <h2 class="text-3xl font-bold tracking-tight sm:text-4xl">Ready to talk?</h2>
+          <p class="mt-3 text-text-2">Free models are always available — start a conversation, no signup needed.</p>
+          <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a href="/chat" data-nav data-page="chat-page" class="btn btn-primary btn-lg w-full sm:w-auto"><i data-lucide="message-circle" class="size-4"></i> Open chat</a>
+            <a href="/catalog" data-nav data-page="catalog-page" class="btn btn-ghost btn-lg w-full sm:w-auto"><i data-lucide="layout-grid" class="size-4"></i> Browse models</a>
           </div>
         </div>
       </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="relative border-t border-border">
-      <div class="mx-auto max-w-6xl px-4 py-12 sm:px-6">
-        <div class="grid grid-cols-2 gap-8 md:grid-cols-4">
-          <div class="col-span-2 md:col-span-1">
-            <div class="flex items-center gap-2">
-              <span class="logo-mark"><i data-lucide="sparkles" class="size-4"></i></span>
-              <span class="font-semibold">Wick<span class="text-transparent bg-clip-text bg-gradient-to-r from-brand-400 to-accent">AI</span></span>
-            </div>
-            <p class="mt-3 text-sm text-text-3">Asisten AI kelas dunia untuk semua orang.</p>
+    <footer class="relative z-10 border-t border-border">
+      <div class="mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <div class="flex flex-col items-center justify-between gap-5 sm:flex-row">
+          <div class="flex items-center gap-2">
+            <span class="logo-mark logo-img"><img src="/logo.png" alt="" /></span>
+            <span class="text-sm font-semibold">Wick<span class="text-text-2">AI</span></span>
           </div>
-          <div>
-            <p class="text-sm font-semibold">Produk</p>
-            <ul class="mt-3 space-y-2 text-sm text-text-2">
-              <li><a href="#fitur" class="footer-link">Fitur</a></li>
-              <li><a href="#harga" class="footer-link">Harga</a></li>
-              <li><a href="/chat" data-nav class="footer-link">Chat</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="text-sm font-semibold">Perusahaan</p>
-            <ul class="mt-3 space-y-2 text-sm text-text-2">
-              <li><a href="#" class="footer-link">Tentang</a></li>
-              <li><a href="#" class="footer-link">Blog</a></li>
-              <li><a href="#" class="footer-link">Kontak</a></li>
-            </ul>
-          </div>
-          <div>
-            <p class="text-sm font-semibold">Legal</p>
-            <ul class="mt-3 space-y-2 text-sm text-text-2">
-              <li><a href="#" class="footer-link">Privasi</a></li>
-              <li><a href="#" class="footer-link">Syarat</a></li>
-            </ul>
-          </div>
-        </div>
-        <div class="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border pt-6 text-xs text-text-3 sm:flex-row">
-          <p>© 2026 WickAI. Dibuat dengan ♥ untuk Indonesia.</p>
-          <p>Powered by OpenRouter & OmniRoute</p>
+          <nav class="flex flex-wrap items-center gap-6">
+            <a href="/" data-nav data-page="landing-page" class="footer-link">Home</a>
+            <a href="/chat" data-nav data-page="chat-page" class="footer-link">Chat</a>
+            <a href="/catalog" data-nav data-page="catalog-page" class="footer-link">Models</a>
+            <a href="/docs" data-nav data-page="docs-page" class="footer-link">Docs</a>
+          </nav>
+          <p class="text-xs text-text-3">&copy; 2026 WickAI</p>
         </div>
       </div>
     </footer>
   </div>
 
   <!-- ============================================================
-       HALAMAN 2 : AUTH
+       CATALOG — MODELS
   ============================================================ -->
-  <div id="auth-page" class="page hidden">
-    <div class="auth-bg" aria-hidden="true">
-      <div class="blob blob-a"></div>
-      <div class="blob blob-b"></div>
-      <div class="blob blob-c"></div>
+  <div id="catalog-page" class="page">
+    <div class="landing-bg" aria-hidden="true"></div>
+    <div class="atmos" aria-hidden="true">
+      <div class="grid"></div>
+      <div class="orb o1"></div>
+      <div class="orb o2"></div>
+      <div class="grain"></div>
     </div>
-
-    <div class="relative z-10 flex min-h-full items-center justify-center px-4 py-10">
-      <div class="w-full max-w-md">
-        <a href="/" data-nav class="mb-6 inline-flex items-center gap-1.5 text-sm text-text-2 transition hover:text-text">
-          <i data-lucide="arrow-left" class="size-4"></i> Kembali ke beranda
-        </a>
-
-        <div class="auth-card glass">
-          <div class="mb-6 text-center">
-            <span class="logo-mark mx-auto"><i data-lucide="sparkles" class="size-5"></i></span>
-            <h1 class="mt-4 text-2xl font-bold tracking-tight">Selamat datang kembali 👋</h1>
-            <p class="mt-1.5 text-sm text-text-2">Masuk atau buat akun untuk mulai chat</p>
-          </div>
-
-          <!-- Tabs -->
-          <div class="auth-tabs mb-6" role="tablist" aria-label="Login atau daftar">
-            <button id="auth-tab-login" class="auth-tab active" role="tab" aria-selected="true">Login</button>
-            <button id="auth-tab-register" class="auth-tab" role="tab" aria-selected="false">Register</button>
-          </div>
-
-          <div id="auth-msg" class="auth-msg hidden" role="alert"></div>
-
-          <!-- Login form -->
-          <form id="login-form" class="auth-form" novalidate>
-            <div class="field">
-              <label for="login-email">Email</label>
-              <div class="input-wrap">
-                <i data-lucide="mail" class="input-icon"></i>
-                <input id="login-email" type="email" autocomplete="email" placeholder="nama@email.com" class="input" />
-              </div>
-              <p class="field-error" data-for="login-email"></p>
-            </div>
-            <div class="field">
-              <label for="login-password">Password</label>
-              <div class="input-wrap">
-                <i data-lucide="lock" class="input-icon"></i>
-                <input id="login-password" type="password" autocomplete="current-password" placeholder="••••••••" class="input pr-12" />
-                <button type="button" class="pass-toggle" data-target="login-password" aria-label="Tampilkan password"><i data-lucide="eye" class="size-4"></i></button>
-              </div>
-              <p class="field-error" data-for="login-password"></p>
-            </div>
-            <div class="mb-4 flex items-center justify-between text-sm">
-              <label class="flex cursor-pointer items-center gap-2 text-text-2">
-                <input id="login-remember" type="checkbox" class="checkbox" />
-                Ingat saya
-              </label>
-              <button id="forgot-link" type="button" class="text-brand-400 transition hover:text-brand-500">Lupa password?</button>
-            </div>
-            <button type="submit" class="btn btn-primary btn-lg w-full" data-submit>
-              <span class="btn-label">Masuk</span>
-              <span class="spinner hidden" aria-hidden="true"></span>
-            </button>
-            <div class="divider"><span>atau lanjutkan dengan</span></div>
-            <div class="grid grid-cols-2 gap-3">
-              <button type="button" class="btn btn-outline" data-social="google"><i data-lucide="chrome" class="size-4"></i> Google</button>
-              <button type="button" class="btn btn-outline" data-social="github"><i data-lucide="github" class="size-4"></i> GitHub</button>
-            </div>
-          </form>
-
-          <!-- Register form -->
-          <form id="register-form" class="auth-form hidden" novalidate>
-            <div class="field">
-              <label for="register-name">Nama</label>
-              <div class="input-wrap">
-                <i data-lucide="user" class="input-icon"></i>
-                <input id="register-name" type="text" autocomplete="name" placeholder="Nama kamu" class="input" />
-              </div>
-              <p class="field-error" data-for="register-name"></p>
-            </div>
-            <div class="field">
-              <label for="register-email">Email</label>
-              <div class="input-wrap">
-                <i data-lucide="mail" class="input-icon"></i>
-                <input id="register-email" type="email" autocomplete="email" placeholder="nama@email.com" class="input" />
-              </div>
-              <p class="field-error" data-for="register-email"></p>
-            </div>
-            <div class="field">
-              <label for="register-password">Password</label>
-              <div class="input-wrap">
-                <i data-lucide="lock" class="input-icon"></i>
-                <input id="register-password" type="password" autocomplete="new-password" placeholder="Min. 6 karakter" class="input pr-12" />
-                <button type="button" class="pass-toggle" data-target="register-password" aria-label="Tampilkan password"><i data-lucide="eye" class="size-4"></i></button>
-              </div>
-              <p class="field-error" data-for="register-password"></p>
-            </div>
-            <div class="field">
-              <label for="register-confirm">Konfirmasi Password</label>
-              <div class="input-wrap">
-                <i data-lucide="shield-check" class="input-icon"></i>
-                <input id="register-confirm" type="password" autocomplete="new-password" placeholder="Ulangi password" class="input pr-12" />
-                <button type="button" class="pass-toggle" data-target="register-confirm" aria-label="Tampilkan password"><i data-lucide="eye" class="size-4"></i></button>
-              </div>
-              <p class="field-error" data-for="register-confirm"></p>
-            </div>
-            <button type="submit" class="btn btn-primary btn-lg w-full" data-submit>
-              <span class="btn-label">Buat Akun</span>
-              <span class="spinner hidden" aria-hidden="true"></span>
-            </button>
-            <div class="divider"><span>atau lanjutkan dengan</span></div>
-            <div class="grid grid-cols-2 gap-3">
-              <button type="button" class="btn btn-outline" data-social="google"><i data-lucide="chrome" class="size-4"></i> Google</button>
-              <button type="button" class="btn btn-outline" data-social="github"><i data-lucide="github" class="size-4"></i> GitHub</button>
-            </div>
-          </form>
-        </div>
-
-        <p class="mt-6 text-center text-xs text-text-3">
-          Dengan masuk, kamu menyetujui <a href="#" class="footer-link">Syarat</a> & <a href="#" class="footer-link">Privasi</a> kami.
-        </p>
+    <main class="relative z-10 mx-auto max-w-6xl px-4 pt-28 pb-16 sm:px-6 sm:pt-32">
+      <div class="max-w-3xl">
+        <span class="micro">Model library</span>
+        <h1 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Browse models</h1>
+        <p class="mt-3 text-text-2">Every model available through OpenRouter. Search, filter, and click any model to start chatting.</p>
       </div>
-    </div>
+
+      <div class="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="search-box w-full sm:max-w-md">
+          <i data-lucide="search" class="size-4 text-text-3"></i>
+          <input id="catalog-search" type="text" placeholder="Search models…" autocomplete="off" />
+          <span class="kbd">/</span>
+        </div>
+        <div id="catalog-filters" class="filter-tabs">
+          <button data-filter="all" class="filter-tab active">All</button>
+          <button data-filter="free" class="filter-tab">Free</button>
+          <button data-filter="vision" class="filter-tab">Vision</button>
+        </div>
+      </div>
+
+      <div class="mt-6 border-t border-border pt-4 flex items-center justify-between">
+        <p id="catalog-count" class="text-xs text-text-3">0 models</p>
+        <div class="flex items-center gap-2">
+          <span class="status-badge load"><span class="loading-wave" style="display:inline-flex"><span></span><span></span><span></span><span></span><span></span></span></span>
+        </div>
+      </div>
+
+      <div id="catalog-grid" class="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"></div>
+    </main>
   </div>
 
   <!-- ============================================================
-       HALAMAN 3 : CHAT
+       CHAT
   ============================================================ -->
   <div id="chat-page" class="page hidden">
     <div class="flex h-full">
 
-      <!-- ======================= Sidebar ======================= -->
       <aside id="sidebar"
-        class="fixed inset-y-0 left-0 z-40 flex w-64 -translate-x-full flex-col border-r border-border bg-surface-2/70 backdrop-blur-xl transition-transform duration-300 lg:static lg:translate-x-0">
+        class="fixed inset-y-0 left-0 z-40 flex w-72 -translate-x-full flex-col border-r border-border bg-soft transition-transform duration-300 lg:static lg:translate-x-0">
         <div class="flex h-14 items-center border-b border-border px-3">
-          <button id="sidebar-toggle" class="icon-btn -ml-1 p-2 md:hidden" aria-label="Tutup sidebar">
+          <button id="sidebar-toggle" class="icon-btn -ml-1 p-2 md:hidden" aria-label="Close sidebar">
             <i data-lucide="panel-left" class="size-4"></i>
           </button>
           <div class="flex items-center gap-2">
-            <span class="logo-mark"><i data-lucide="sparkles" class="size-4"></i></span>
+            <span class="logo-mark logo-img"><img src="/logo.png" alt="" /></span>
             <span id="app-name" class="truncate text-sm font-semibold">WickAI</span>
           </div>
         </div>
@@ -462,46 +247,41 @@
           </button>
         </div>
 
-        <div class="px-4 pb-2 text-xs font-semibold uppercase tracking-wider text-text-3">Chat History</div>
-        <nav id="chat-list" class="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 pb-3" aria-label="Riwayat chat"></nav>
+        <div class="px-4 pb-2 micro">History</div>
+        <nav id="chat-list" class="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 pb-3" aria-label="Chat history"></nav>
 
         <div class="border-t border-border p-3">
-          <div class="flex items-center gap-2.5 rounded-xl px-2 py-2">
-            <span id="user-avatar" class="avatar violet size-8 text-xs">AI</span>
+          <div class="flex items-center gap-2.5 px-1 py-1">
+            <span id="user-avatar" class="grid size-8 shrink-0 place-items-center rounded-md border border-border-2 bg-surface text-[11px]">W</span>
             <div class="min-w-0 flex-1">
-              <p id="sidebar-user-name" class="truncate text-sm font-medium">Pengguna</p>
-              <p id="sidebar-user-email" class="truncate text-xs text-text-3"></p>
+              <p id="sidebar-user-name" class="truncate text-[13px] font-medium">Guest</p>
+              <p id="sidebar-user-email" class="truncate text-[11px] text-text-3">No login required</p>
             </div>
-            <button id="logout-btn" class="icon-btn grid size-8 place-items-center rounded-lg text-text-3 transition hover:text-rose-400" title="Logout" aria-label="Keluar">
-              <i data-lucide="log-out" class="size-4"></i>
-            </button>
+            <a href="/" data-nav data-page="landing-page" class="icon-btn grid size-8 place-items-center" title="Back to home"><i data-lucide="home" class="size-4"></i></a>
           </div>
         </div>
       </aside>
       <div id="sidebar-overlay" class="fixed inset-0 z-30 hidden bg-black/60 lg:hidden"></div>
 
-      <!-- ======================= Main ======================= -->
       <div class="flex min-w-0 flex-1 flex-col">
-
-        <!-- Header -->
         <header class="sticky top-0 z-10 flex h-14 items-center gap-2 border-b border-border bg-base/80 px-3 backdrop-blur">
-          <button id="sidebar-toggle-header" class="icon-btn -ml-1 p-2 lg:hidden" aria-label="Buka sidebar">
+          <button id="sidebar-toggle-header" class="icon-btn -ml-1 p-2 lg:hidden" aria-label="Open sidebar">
             <i data-lucide="panel-left" class="size-4"></i>
           </button>
 
           <div class="flex flex-1 items-center justify-center">
             <div class="relative">
               <select id="model-select"
-                class="appearance-none rounded-lg bg-surface-2 py-1.5 pl-3 pr-8 text-sm font-medium ring-1 ring-border transition hover:bg-surface focus:outline-none focus:ring-2 focus:ring-brand-500/50 max-w-[220px] sm:max-w-xs cursor-pointer">
+                class="appearance-none rounded-md bg-surface py-1.5 pl-3 pr-8 text-[13px] font-medium ring-1 ring-border transition hover:bg-surface2 focus:outline-none focus:ring-2 focus:ring-text-3 max-w-[220px] sm:max-w-xs cursor-pointer">
               </select>
-              <i data-lucide="chevron-down" class="pointer-events-none absolute right-2.5 top-1/2 size-4 -translate-y-1/2 text-text-3"></i>
+              <i data-lucide="chevron-down" class="pointer-events-none absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 text-text-3"></i>
             </div>
           </div>
 
           <div class="flex items-center gap-0.5">
             <button id="system-prompt-btn" class="icon-btn p-2" title="System prompt">
               <i data-lucide="bot" class="size-4"></i>
-              <span id="system-prompt-dot" class="hidden absolute right-1 top-1 size-1.5 rounded-full bg-emerald-400"></span>
+              <span id="system-prompt-dot" class="hidden absolute right-1 top-1 size-1.5 rounded-full bg-green-400"></span>
             </button>
             <button id="export-btn" class="icon-btn p-2" title="Export chat">
               <i data-lucide="download" class="size-4"></i>
@@ -512,37 +292,33 @@
           </div>
         </header>
 
-        <!-- Chat area -->
         <div id="chat-scroll" class="flex-1 overflow-y-auto">
           <div id="chat" class="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-6"></div>
         </div>
 
-        <!-- Scroll to bottom -->
         <button id="scroll-bottom-btn"
-          class="hidden fixed bottom-28 right-5 z-20 grid size-9 place-items-center rounded-full border border-border bg-surface-2 text-text-2 shadow-xl backdrop-blur transition hover:bg-surface hover:text-text">
+          class="hidden fixed bottom-28 right-5 z-20 grid size-9 place-items-center rounded-full border border-border-2 bg-surface text-text-2 shadow-xl backdrop-blur transition hover:bg-surface2 hover:text-text">
           <i data-lucide="arrow-down" class="size-4"></i>
         </button>
 
-        <!-- Composer -->
         <div class="composer-wrap px-3 pb-3 sm:px-4">
           <div class="mx-auto max-w-2xl">
-            <div id="composer" class="rounded-2xl border border-border bg-surface-2/70 shadow-xl shadow-black/20 backdrop-blur
-                        transition focus-within:border-brand-500/40 focus-within:bg-surface-2">
+            <div id="composer" class="rounded-xl border border-border-2 bg-soft shadow-xl shadow-black/30 transition focus-within:border-text-3">
               <div id="attachments" class="hidden flex-wrap gap-2 px-4 pt-3"></div>
-              <textarea id="input" rows="1" placeholder="Tanya apa saja ke AI..."
-                class="w-full resize-none bg-transparent px-4 pt-3 text-base leading-relaxed outline-none placeholder:text-text-3 max-h-52 sm:text-sm"></textarea>
+              <textarea id="input" rows="1" placeholder="Message WickAI…"
+                class="w-full resize-none bg-transparent px-4 pt-3 text-[15px] leading-relaxed outline-none placeholder:text-text-3 max-h-52"></textarea>
               <div class="flex items-center justify-between px-2 pb-2">
                 <div class="flex items-center gap-0.5">
-                  <button id="attach-btn" class="icon-btn" title="Lampirkan gambar / file">
+                  <button id="attach-btn" class="icon-btn" title="Attach file">
                     <i data-lucide="paperclip" class="size-4"></i>
                   </button>
-                  <button id="mic-btn" class="icon-btn" title="Input suara (Speech-to-Text)">
+                  <button id="mic-btn" class="icon-btn" title="Voice input">
                     <i data-lucide="mic" class="size-4"></i>
                   </button>
-                  <button id="search-btn" class="icon-btn" title="Cari di web — injeksi hasil pencarian ke jawaban">
+                  <button id="search-btn" class="icon-btn" title="Web search">
                     <i data-lucide="globe" class="size-4"></i>
                   </button>
-                  <button id="image-btn" class="icon-btn" title="Generate gambar dari teks">
+                  <button id="image-btn" class="icon-btn" title="Generate image">
                     <i data-lucide="image" class="size-4"></i>
                   </button>
                 </div>
@@ -550,37 +326,109 @@
                   accept="image/*,.pdf,.txt,.md,.csv,.json,.js,.ts,.py,.html,.css,.log" />
 
                 <div class="flex items-center gap-2">
-                  <button id="stop-btn" class="hidden items-center gap-1.5 rounded-lg border border-border bg-surface-2 px-3 py-1.5 text-sm text-text transition hover:bg-surface">
-                    <i data-lucide="square" class="size-3.5"></i> Stop
+                  <button id="stop-btn" class="hidden items-center gap-1.5 rounded-md border border-border-2 bg-surface px-3 py-1.5 text-xs text-text-2 transition hover:bg-surface2">
+                    <i data-lucide="square" class="size-3"></i> Stop
                   </button>
                   <button id="send-btn" disabled
-                    class="grid size-8 place-items-center rounded-full bg-gradient-to-r from-brand-500 to-indigo-500 text-white shadow-lg shadow-brand-500/30 transition hover:brightness-110 active:scale-95 disabled:opacity-30 disabled:shadow-none disabled:hover:brightness-100">
+                    class="grid size-8 place-items-center rounded-full bg-white text-black shadow-lg shadow-black/40 transition hover:bg-zinc-300 active:scale-95 disabled:opacity-30 disabled:shadow-none disabled:hover:bg-white">
                     <i data-lucide="arrow-up" class="size-4"></i>
                   </button>
                 </div>
               </div>
             </div>
-            <p class="mt-2 text-center text-xs text-text-3">AI dapat melakukan kesalahan. Periksa informasi penting.</p>
+            <p class="mt-2 text-center text-[11px] text-text-3">AI can make mistakes — verify important information.</p>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- ======================= Dropdown menu ======================= -->
-  <div id="dropdown" class="hidden fixed z-50 w-56 rounded-xl border border-border bg-surface-2/90 py-1.5 text-sm shadow-2xl shadow-black/50 backdrop-blur-xl">
+  <!-- ============================================================
+       DOCS
+  ============================================================ -->
+  <div id="docs-page" class="page">
+    <div class="landing-bg" aria-hidden="true"></div>
+    <div class="atmos" aria-hidden="true">
+      <div class="grid"></div>
+      <div class="orb o1"></div>
+      <div class="orb o3"></div>
+      <div class="grain"></div>
+    </div>
+
+    <div class="relative z-10 flex flex-col lg:flex-row">
+      <aside class="hidden lg:block w-60 shrink-0 border-r border-border px-5 pt-32 pb-10">
+        <p class="micro">Reference</p>
+        <nav class="mt-4 flex flex-col gap-1">
+          <a href="#intro" class="nav-link text-[13px]">Introduction</a>
+          <a href="#endpoints" class="nav-link text-[13px]">Endpoints</a>
+          <a href="#ep-chat" class="nav-link text-[13px]">POST /api/chat</a>
+          <a href="#ep-models" class="nav-link text-[13px]">GET /api/models</a>
+          <a href="#ep-search" class="nav-link text-[13px]">GET /api/search</a>
+          <a href="#ep-images" class="nav-link text-[13px]">POST /api/images</a>
+          <a href="#ep-chats" class="nav-link text-[13px]">CHATS /api/chats</a>
+          <a href="#ep-config" class="nav-link text-[13px]">GET /api/config</a>
+          <a href="#errors" class="nav-link text-[13px]">Errors</a>
+        </nav>
+      </aside>
+
+      <main class="mx-auto w-full max-w-3xl px-4 pt-28 pb-20 sm:px-6 sm:pt-32">
+        <div id="intro">
+          <span class="micro">Documentation</span>
+          <h1 class="mt-3 text-3xl font-bold tracking-tight sm:text-4xl">Developer reference</h1>
+          <p class="mt-3 text-text-2">The endpoints behind WickAI — documented and runnable. Expand an endpoint to edit its
+            request, press <span class="inline-code">Run</span> to call the live server, or copy a ready-made
+            <span class="inline-code">curl</span> snippet.</p>
+        </div>
+
+        <div id="errors" class="doc-row">
+          <h3>Try it yourself</h3>
+          <p>Each endpoint includes a working request. Click one to expand it, edit the JSON if you like, then run it against
+            the live instance to see the response.</p>
+        </div>
+
+        <!-- Endpoint explorer is rendered by JS into #endpoints -->
+        <div id="endpoints"></div>
+
+        <div id="errors-block" class="mt-10">
+          <div class="flex items-baseline justify-between border-b border-border pb-4">
+            <span class="micro">Error handling</span>
+          </div>
+          <div class="doc-row">
+            <h3>HTTP errors</h3>
+            <p>Non-2xx responses return a JSON body shaped as
+              <span class="inline-code">{"error": "…"}</span> with the matching status code. Failures are shown with a clear
+              red badge instead of silent breakage.</p>
+          </div>
+          <div class="doc-row">
+            <h3>Stream errors</h3>
+            <p>During streaming, the server emits a
+              <span class="inline-code">data: {"error": true, "message": "…"}</span> event. The app keeps whatever was
+              already generated and shows the error inline.</p>
+          </div>
+          <div class="doc-row">
+            <h3>No API key</h3>
+            <p>If <span class="inline-code">OPENROUTER_API_KEY</span> is not configured on the server, chat and image
+              endpoints return <span class="status-badge err">500</span> with a friendly message.</p>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- ======================= Dropdown ======================= -->
+  <div id="dropdown" class="hidden fixed z-50 w-56 rounded-xl border border-border bg-soft py-1.5 text-sm shadow-2xl shadow-black/60">
     <button data-action="new" class="menu-item"><i data-lucide="square-pen" class="size-4"></i>New chat</button>
     <button data-action="export-md" class="menu-item"><i data-lucide="file-text" class="size-4"></i>Export Markdown</button>
     <button data-action="export-json" class="menu-item"><i data-lucide="braces" class="size-4"></i>Export JSON</button>
     <button data-action="export-txt" class="menu-item"><i data-lucide="file-down" class="size-4"></i>Export Text</button>
     <div class="my-1.5 border-t border-border"></div>
-    <button data-action="clear" class="menu-item text-rose-400 hover:bg-rose-500/10"><i data-lucide="trash-2" class="size-4"></i>Hapus riwayat</button>
+    <button data-action="clear" class="menu-item text-red-400 hover:bg-red-500/10"><i data-lucide="trash-2" class="size-4"></i>Clear history</button>
   </div>
 
   <!-- ======================= Modal ======================= -->
   <div id="modal" class="hidden fixed inset-0 z-50 grid place-items-center p-4">
     <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-close></div>
-    <div id="modal-card" class="relative w-full max-w-md rounded-2xl border border-border bg-base-soft p-5 shadow-2xl shadow-black/60"></div>
+    <div id="modal-card" class="relative w-full max-w-md rounded-xl border border-border bg-soft p-5 shadow-2xl shadow-black/60"></div>
   </div>
 
   <!-- ======================= Toasts ======================= -->
@@ -589,10 +437,10 @@
   <!-- ======================= Live code preview ======================= -->
   <div id="preview-modal" class="hidden fixed inset-0 z-50 grid place-items-center p-4">
     <div class="absolute inset-0 bg-black/70 backdrop-blur-sm" data-preview-close></div>
-    <div class="relative flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-border bg-base-soft shadow-2xl shadow-black/60">
+    <div class="relative flex h-[80vh] w-full max-w-3xl flex-col overflow-hidden rounded-xl border border-border bg-soft shadow-2xl shadow-black/60">
       <div class="flex items-center justify-between gap-2 border-b border-border px-4 py-2.5">
-        <p class="text-xs font-medium text-text-2">Live preview</p>
-        <button data-preview-close class="icon-btn grid size-7 place-items-center" aria-label="Tutup">
+        <p class="text-xs text-text-3">Live preview</p>
+        <button data-preview-close class="icon-btn grid size-7 place-items-center" aria-label="Close">
           <i data-lucide="x" class="size-4"></i>
         </button>
       </div>
@@ -603,6 +451,10 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/lib/common.min.js"></script>
-  <script src="/app.js?v=7"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/prism.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-markdown.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1.29.0/components/prism-bash.min.js"></script>
+  <script src="/app.js?v=6"></script>
 </body>
 </html>

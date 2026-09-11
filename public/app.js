@@ -33,18 +33,12 @@ const pageTitle = document.getElementById('page-title')
 
 /* ================= Constants & State ================= */
 const LS_KEY = 'openrouter-chats:v3'
-const DEFAULT_MODELS = [
-  'pemula',
-  'auto/best-chat',
-  'auto/best-coding',
-  'auto/best-vision',
-  'auto/best-fast',
-]
+const RECOMMENDED_PREFIXES = ['openai/', 'anthropic/', 'google/gemini-', 'meta-llama/', 'mistralai/', 'deepseek/']
 const SUGGESTIONS = [
-  { title: 'Buat aplikasi to-do', desc: 'menggunakan React dan Tailwind' },
-  { title: 'Jelaskan red-black tree', desc: 'dengan analogi sederhana' },
-  { title: 'Tulis puisi tentang pantai', desc: 'suasana matahari terbenam' },
-  { title: 'Brainstorm ide startup', desc: 'untuk tahun 2026' },
+  { title: 'Explain quantum computing', desc: 'in simple terms' },
+  { title: 'Write a haiku', desc: 'about the ocean' },
+  { title: 'Plan my work day', desc: 'with useful productivity tips' },
+  { title: 'Summarize any article', desc: 'paste a link or text below' },
 ]
 
 let allModels = []
@@ -53,7 +47,7 @@ let currentChatId = null
 let abortCtrl = null
 let streaming = false
 let stickToBottom = true
-let lastModel = 'pemula'
+let lastModel = 'openrouter/free'
 let attachments = []
 let searchMode = false
 let imageMode = false
@@ -97,26 +91,22 @@ function initials(name) {
 
 function navigate() {
   let path = location.pathname
-  if (!['/', '/auth', '/chat'].includes(path)) path = '/'
-  if (path === '/chat' && !authUser()) {
-    history.replaceState(null, '', '/auth')
-    path = '/auth'
-    showToast('Silakan login untuk mengakses chat.', 'info')
-  }
-  if (path === '/auth' && authUser()) {
-    history.replaceState(null, '', '/chat')
-    path = '/chat'
-  }
-  const map = { '/': 'landing-page', '/auth': 'auth-page', '/chat': 'chat-page' }
+  if (!['/', '/docs', '/chat', '/catalog'].includes(path)) path = '/'
+  const map = { '/': 'landing-page', '/docs': 'docs-page', '/chat': 'chat-page', '/catalog': 'catalog-page' }
   const id = map[path]
+  document.body.classList.toggle('chat-mode', id === 'chat-page')
   document.querySelectorAll('.page').forEach((p) => p.classList.remove('active'))
   const el = document.getElementById(id)
   if (el) el.classList.add('active')
   currentPage = id
   document.title =
     id === 'chat-page' ? (cfgTitle || 'WickAI') :
-    id === 'auth-page' ? 'Masuk / Daftar — WickAI' :
-    'WickAI — Asisten AI kelas dunia'
+    id === 'docs-page' ? 'Docs — WickAI' :
+    id === 'catalog-page' ? 'Models — WickAI' :
+    'WickAI — AI Chat'
+  document.querySelectorAll('.nav-link[data-page]').forEach((a) => {
+    a.classList.toggle('active', a.dataset.page === id)
+  })
   if (id === 'chat-page') fillUserInfo()
   window.scrollTo(0, 0)
 }
@@ -135,11 +125,21 @@ function setupRouter() {
   window.addEventListener('popstate', navigate)
 }
 
-function setupLanding() {
-  const nav = document.getElementById('landing-nav')
+function setupNav() {
+  const nav = document.getElementById('top-nav')
   const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 10)
   window.addEventListener('scroll', onScroll, { passive: true })
   onScroll()
+  const mobileBtn = document.getElementById('mobile-menu-btn')
+  const mobileMenu = document.getElementById('mobile-menu')
+  if (mobileBtn && mobileMenu) {
+    mobileBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'))
+  }
+  document.querySelectorAll('[data-nav]').forEach((a) => {
+    a.addEventListener('click', () => {
+      if (mobileMenu) mobileMenu.classList.add('hidden')
+    })
+  })
   if ('IntersectionObserver' in window) {
     const io = new IntersectionObserver((entries) => {
       for (const en of entries) {
@@ -304,10 +304,10 @@ function setupAuth() {
 
 function setupChatExtras() {
   const logoutBtn = document.getElementById('logout-btn')
-  logoutBtn.addEventListener('click', () => {
+  if (logoutBtn) logoutBtn.addEventListener('click', () => {
     clearSession()
-    showToast('Berhasil keluar.', 'success')
-    history.pushState(null, '', '/auth')
+    showToast('Signed out.', 'success')
+    history.pushState(null, '', '/')
     navigate()
   })
 }
@@ -333,13 +333,13 @@ function renderSidebarSkeleton() {
 }
 const MAX_FILE_SIZE = 6 * 1024 * 1024
 const MAX_TOTAL_SIZE = 10 * 1024 * 1024
-const IMAGE_MODEL = 'antigravity/gemini-3.1-flash-image'
-const FREE_VISION_MODEL = 'auto/best-vision'
+const IMAGE_MODEL = 'google/gemini-2.5-flash-image'
+const FREE_VISION_MODEL = 'google/gemma-4-31b-it:free'
 function isVisionCapable(id) {
   if (!id) return false
   const known = allModels.find((m) => m.id === id)
   if (known) return !!known.vision
-  return /vision|vl|pemula|gemini|4o|omni|multimodal/i.test(String(id).toLowerCase())
+  return /vision|gemini|4o|omni|multimodal/i.test(String(id).toLowerCase())
 }
 function ensureModelOption(id) {
   if (!modelSelect.querySelector(`option[value="${CSS.escape(id)}"]`)) {
@@ -654,17 +654,18 @@ function buildEmptyState() {
   const box = document.createElement('div')
   box.className = 'flex flex-col items-center px-4 py-12'
   box.innerHTML = `
-    <h1 class="greet-title text-center text-2xl md:text-3xl font-semibold tracking-tight">Apa yang bisa saya bantu?</h1>
-    <p class="greet-sub mt-3 text-center text-sm text-text-3">Tanya apa saja, tulis kode, atau jelajahi ide.</p>
+    <img src="/logo.png" alt="WickAI" class="logo-empty" />
+    <h1 class="greet-title mt-5 text-center text-2xl md:text-3xl font-semibold tracking-tight">How can I help you today?</h1>
+    <p class="greet-sub mt-2 text-center text-sm">Pick a suggestion below, or just type your message.</p>
     <div class="grid w-full max-w-lg grid-cols-1 sm:grid-cols-2 gap-3 mt-8"></div>
   `
   const grid = box.querySelector('.grid')
   SUGGESTIONS.forEach((s, i) => {
     const b = document.createElement('button')
-    b.className = 'sugg-item flex flex-col gap-1 rounded-lg border border-border bg-surface p-3 text-left'
+    b.className = 'sugg-item flex flex-col gap-1 rounded-lg border p-3 text-left'
     b.style.animationDelay = `${0.45 + i * 0.05}s`
     b.innerHTML = `
-      <span class="text-sm font-medium">${escapeHtml(s.title)}</span>
+      <span class="text-[13px] font-medium text-text">${escapeHtml(s.title)}</span>
       <span class="text-xs text-text-3">${escapeHtml(s.desc)}</span>
     `
     b.addEventListener('click', () => {
@@ -799,7 +800,7 @@ function buildAssistantPlaceholder() {
   body.className = 'flex min-w-0 flex-1 flex-col gap-1.5'
   const content = document.createElement('div')
   content.className = 'msg-content markdown'
-  content.innerHTML = '<span class="typing" data-typing><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>'
+  content.innerHTML = '<span class="loading-wave" data-wave style="display:inline-flex"><span></span><span></span><span></span><span></span><span></span></span>'
   body.appendChild(content)
   wrap.appendChild(body)
   return wrap
@@ -1364,7 +1365,7 @@ async function ask(chat, requestMessages) {
               }
               if (j.content) {
                 accumulated += j.content
-                const typingEl = wrap.querySelector('[data-typing]')
+                const typingEl = wrap.querySelector('[data-wave]')
                 if (typingEl) typingEl.remove()
                 contentDiv.innerHTML = renderMarkdown(accumulated)
                 scrollToBottom()
@@ -1396,6 +1397,22 @@ async function ask(chat, requestMessages) {
     } else {
       wrap.remove()
       renderChat()
+      const errPanel = document.createElement('div')
+      errPanel.className = 'msg flex items-start gap-3'
+      errPanel.innerHTML = `
+        <div class="msg-avatar"><i data-lucide="circle-alert" class="size-3.5"></i></div>
+        <div class="min-w-0 flex-1">
+          <div class="resp-panel">
+            <div class="resp-head">
+              <span class="resp-label">Something went wrong</span>
+              <span class="status-badge err">failed</span>
+            </div>
+            <pre class="resp-pre err">${escapeHtml(errorMsg || 'Request failed.')}</pre>
+          </div>
+        </div>`
+      chatEl.appendChild(errPanel)
+      lucide.createIcons()
+      scrollToBottom(true)
       if (errorMsg) showToast(errorMsg, 'error')
     }
     renderSidebar()
@@ -1415,11 +1432,15 @@ async function loadModels() {
     console.error('Gagal memuat model', e)
   }
   renderModelOptions()
+  renderCatalog()
 }
 
 function renderModelOptions() {
   const prev = modelSelect.value && modelSelect.value !== '__custom__' ? modelSelect.value : lastModel
   const free = allModels.filter((m) => m.free)
+  const recommended = allModels
+    .filter((m) => RECOMMENDED_PREFIXES.some((p) => m.id.startsWith(p)))
+    .slice(0, 10)
 
   modelSelect.innerHTML = ''
 
@@ -1442,13 +1463,13 @@ function renderModelOptions() {
     modelSelect.appendChild(g)
   }
 
-  addOption('auto/chat', 'Auto — chat terbaik')
-  addGroup('Recommended', DEFAULT_MODELS.map((id) => ({ id, name: id })))
+  addGroup('Recommended', recommended)
   addGroup(`Free (${free.length})`, free)
   addGroup(`All models (${allModels.length})`, allModels)
   addOption('__custom__', 'Custom model…')
 
-  const target = prev && modelSelect.querySelector(`option[value="${CSS.escape(prev)}"]`) ? prev : 'pemula'
+  const fallback = recommended[0] ? recommended[0].id : 'openrouter/free'
+  const target = prev && modelSelect.querySelector(`option[value="${CSS.escape(prev)}"]`) ? prev : fallback
   modelSelect.value = target
   lastModel = modelSelect.value
 }
@@ -1607,14 +1628,16 @@ dropdown.addEventListener('click', (e) => {
 })
 document.addEventListener('click', () => hideDropdown())
 
-/* ================= Premium effects (landing) ================= */
+/* ================= Landing effects ================= */
 function setupEffects() {
   const fine = window.matchMedia('(hover: hover) and (pointer: fine)').matches
   const noMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
   const landing = document.getElementById('landing-page')
+  if (!landing) return
 
   const bar = document.getElementById('scroll-progress')
   const onScroll = () => {
+    if (!bar) return
     const h = document.documentElement.scrollHeight - window.innerHeight
     bar.style.width = (h > 0 ? (window.scrollY / h) * 100 : 0) + '%'
   }
@@ -1637,58 +1660,452 @@ function setupEffects() {
     requestAnimationFrame(step)
   }
   const stats = landing.querySelectorAll('.hero-stat strong')
-  const statObs = new IntersectionObserver((entries) => {
-    entries.forEach((en) => {
-      if (!en.isIntersecting) return
-      statObs.unobserve(en.target)
-      animateCount(en.target)
-    })
-  }, { threshold: 0.5 })
-  stats.forEach((s) => statObs.observe(s))
-
-  if (fine) {
-    landing.querySelectorAll('.feature-card, .testimonial-card, .price-card').forEach((card) => {
-      card.addEventListener('mousemove', (e) => {
-        const r = card.getBoundingClientRect()
-        card.style.setProperty('--mx', e.clientX - r.left + 'px')
-        card.style.setProperty('--my', e.clientY - r.top + 'px')
+  if (stats.length && 'IntersectionObserver' in window) {
+    const statObs = new IntersectionObserver((entries) => {
+      entries.forEach((en) => {
+        if (!en.isIntersecting) return
+        statObs.unobserve(en.target)
+        animateCount(en.target)
       })
-    })
+    }, { threshold: 0.5 })
+    stats.forEach((s) => statObs.observe(s))
   }
 
   if (fine && !noMotion) {
-    const blobs = landing.querySelectorAll('.blob')
     const mock = landing.querySelector('.mock-chat')
-    landing.addEventListener('mousemove', (e) => {
-      const x = e.clientX / window.innerWidth - 0.5
-      const y = e.clientY / window.innerHeight - 0.5
-      blobs.forEach((b, i) => {
-        b.style.translate = `${(x * (14 + i * 7)).toFixed(1)}px ${(y * (10 + i * 5)).toFixed(1)}px`
+    const card = landing.querySelector('.cta-panel')
+    if (mock) {
+      landing.addEventListener('mousemove', (e) => {
+        const x = (e.clientX / window.innerWidth - 0.5)
+        const y = (e.clientY / window.innerHeight - 0.5)
+        if (mock) mock.style.transform = `perspective(1000px) rotateX(${(-y * 4).toFixed(2)}deg) rotateY(${(x * 6).toFixed(2)}deg)`
+        if (card) card.style.transform = `perspective(1000px) rotateX(${(y * 2).toFixed(2)}deg) rotateY(${(-x * 3).toFixed(2)}deg)`
       })
-      if (mock) mock.style.transform = `perspective(900px) rotateX(${(-y * 3).toFixed(2)}deg) rotateY(${(x * 5).toFixed(2)}deg)`
-    })
-    landing.addEventListener('mouseleave', () => {
-      blobs.forEach((b) => { b.style.translate = '' })
-      if (mock) mock.style.transform = ''
-    })
+      landing.addEventListener('mouseleave', () => {
+        if (mock) mock.style.transform = ''
+        if (card) card.style.transform = ''
+      })
+    }
+  }
 
-    landing.querySelectorAll('.hero-cta').forEach((btn) => {
-      btn.addEventListener('mousemove', (e) => {
-        const r = btn.getBoundingClientRect()
-        btn.style.translate = `${((e.clientX - r.left - r.width / 2) * 0.15).toFixed(1)}px ${((e.clientY - r.top - r.height / 2) * 0.15).toFixed(1)}px`
-      })
-      btn.addEventListener('mouseleave', () => { btn.style.translate = '' })
-    })
+  /* Magnetic hero CTAs */
+  if (fine && !noMotion) {
+    document.querySelectorAll('.hero-cta').forEach((btn) => {
+    const move = (e) => {
+      const r = btn.getBoundingClientRect()
+      btn.style.translate = `${((e.clientX - r.left - r.width / 2) * 0.18).toFixed(1)}px ${((e.clientY - r.top - r.height / 2) * 0.18).toFixed(1)}px`
+    }
+    const leave = () => { btn.style.translate = '' }
+    const d = (f) => window.matchMedia('(hover: hover) and (pointer: fine)').matches
+    btn.addEventListener('mousemove', d() ? move : () => {})
+    btn.addEventListener('mouseleave', d() ? leave : () => {})
+  })
   }
 }
 
-/* ================= Init ================= */
+/* ================= Catalog (search & filter) ================= */
+let catalogQuery = ''
+let catalogFilter = 'all'
+let catalogOpenId = null
+
+function setupCatalog() {
+  const searchInput = document.getElementById('catalog-search')
+  if (!searchInput) return
+  searchInput.addEventListener('input', () => {
+    catalogQuery = searchInput.value.trim().toLowerCase()
+    renderCatalog()
+  })
+  document.addEventListener('keydown', (e) => {
+    const onCatalog = document.getElementById('catalog-page').classList.contains('active')
+    if (!onCatalog) return
+    if (e.key === '/' && document.activeElement !== searchInput) {
+      e.preventDefault()
+      searchInput.focus()
+    }
+    if (e.key === 'Escape' && document.activeElement === searchInput) {
+      searchInput.value = ''
+      catalogQuery = ''
+      searchInput.blur()
+      renderCatalog()
+    }
+  })
+  document.getElementById('catalog-filters').addEventListener('click', (e) => {
+    const btn = e.target.closest('.filter-tab')
+    if (!btn) return
+    catalogFilter = btn.dataset.filter
+    document.querySelectorAll('#catalog-filters .filter-tab').forEach((b) => b.classList.toggle('active', b === btn))
+    renderCatalog()
+  })
+}
+
+function renderCatalog() {
+  const grid = document.getElementById('catalog-grid')
+  const count = document.getElementById('catalog-count')
+  if (!grid) return
+  const free = catalogFilter === 'free'
+  const vision = catalogFilter === 'vision'
+  let models = allModels
+  if (catalogQuery) models = models.filter((m) => (m.id + ' ' + (m.name || '')).toLowerCase().includes(catalogQuery))
+  if (free) models = models.filter((m) => m.free)
+  if (vision) models = models.filter((m) => m.vision)
+
+  grid.innerHTML = ''
+  if (models.length === 0) {
+    grid.innerHTML = `<div class="col-span-full rounded-xl border border-border bg-soft p-12 text-center">
+      <p class="text-sm text-text-3">No models match <span class="text-text-2">'${escapeHtml(catalogQuery || catalogFilter)}'</span></p>
+    </div>`
+  }
+
+  models.slice(0, 60).forEach((m, i) => {
+    const card = document.createElement('a')
+    card.className = 'model-card'
+    card.style.animationDelay = `${Math.min(i * 0.028, 0.5)}s`
+    card.href = '/chat'
+    card.dataset.nav = ''
+    card.innerHTML = `
+      <div class="flex items-center justify-between gap-2">
+        <span class="mid">${escapeHtml(m.id)}</span>
+        ${m.free ? '<span class="model-tag free">free</span>' : ''}
+        ${m.vision ? '<span class="model-tag vision">vision</span>' : ''}
+      </div>
+      <h3>${escapeHtml(m.name || m.id)}</h3>`
+    card.addEventListener('click', () => {
+      history.pushState(null, '', '/chat')
+      navigate()
+      ensureModelOption(m.id, true)
+    })
+    grid.appendChild(card)
+  })
+  if (count) {
+    count.textContent = `${models.length}${catalogQuery ? ` matching '${catalogQuery}'` : ''} · ${allModels.length} total`
+  }
+  lucide.createIcons()
+}
+
+/* ================= Docs — endpoint explorer ================= */
+const DOC_ENDPOINTS = [
+  {
+    id: 'models',
+    method: 'GET', path: '/api/models', tag: 'models',
+    desc: 'List available models (cached 10 min).',
+    headers: {},
+    body: null,
+    examples: null,
+    curlNow: 'curl -s https://HOST/api/models',
+    run: async () => (await fetch('/api/models')).text(),
+    requestLabel: 'arguments · none',
+    bodyHint: 'This endpoint takes no body. Run it to list every model exposed by the server.',
+  },
+  {
+    id: 'chat',
+    method: 'POST', path: '/api/chat', tag: 'chat',
+    desc: 'Stream a chat completion (SSE).',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'openrouter/free',
+      messages: [
+        { role: 'system', content: 'You are a concise assistant.' },
+        { role: 'user', content: 'Say hello in 5 words.' },
+      ],
+    }, null, 2),
+    curl: (b, host) => `curl -N https://${host}/api/chat \\
+  -X POST \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(b)}'`,
+    run: (b) => runStream(b),
+    requestLabel: 'request body · json',
+    bodyHint: 'Streams events back over SSE until [DONE].',
+  },
+  {
+    id: 'config',
+    method: 'GET', path: '/api/config', tag: 'config',
+    desc: 'App config: title, default model, key status.',
+    headers: {}, body: null, examples: null,
+    curlNow: 'curl -s https://HOST/api/config',
+    run: async () => (await fetch('/api/config')).text(),
+    requestLabel: 'arguments · none',
+    bodyHint: 'Read-only configuration object.',
+  },
+  {
+    id: 'search',
+    method: 'GET', path: '/api/search?q=…', tag: 'search',
+    desc: 'Web search via DuckDuckGo (min 3 chars).',
+    headers: {}, body: null,
+    query: 'q',
+    queryValue: 'large language models 2026',
+    curlNow: 'curl -s "https://HOST/api/search?q=latest+AI+news"',
+    run: () => fetch(`/api/search?q=${encodeURIComponent('large language models 2026')}`).then(r => r.ok ? r.text() : r.text().then(t => `HTTP ${r.status}\n${t}`)),
+    requestLabel: 'query params',
+    bodyHint: 'Returns { results: [] } of fresh web results.',
+  },
+  {
+    id: 'images',
+    method: 'POST', path: '/api/images', tag: 'images',
+    desc: 'Generate an image (url or b64).',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'google/gemini-2.5-flash-image', prompt: 'a minimalist logo of a rising sun over the ocean' }, null, 2),
+    curl: (b, host) => `curl https://${host}/api/images \\
+  -X POST \\
+  -H "Content-Type: application/json" \\
+  -d '${JSON.stringify(b)}'`,
+    run: (b) => fetch('/api/images', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(r => r.ok ? r.text() : r.text().then(t => `HTTP ${r.status}\n${t}`)),
+    requestLabel: 'request body · json',
+    bodyHint: 'Returns { url } or { b64 } when successful.',
+  },
+  {
+    id: 'chats',
+    method: 'GET', path: '/api/chats', tag: 'chats',
+    desc: 'Fetch all cloud-synced chats.',
+    headers: {}, body: null, examples: null,
+    curlNow: 'curl -s https://HOST/api/chats',
+    run: async () => (await fetch('/api/chats')).text(),
+    requestLabel: 'arguments · none',
+    bodyHint: 'Also supports PUT /api/chats to persist {\"chats\": []}.',
+  },
+]
+
+function reqBodyJson(s) {
+  try { return JSON.parse(s) } catch (e) { throw new Error('invalid JSON: ' + e.message) }
+}
+
+async function runStream(body) {
+  const res = await fetch('/api/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) return `HTTP ${res.status}\n${await res.text()}`
+  const reader = res.body.getReader()
+  const decoder = new TextDecoder()
+  let buf = ''
+  let out = ''
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+    buf += decoder.decode(value, { stream: true })
+    let idx
+    while ((idx = buf.indexOf('\n\n')) !== -1) {
+      const block = buf.slice(0, idx)
+      buf = buf.slice(idx + 2)
+      for (const line of block.split('\n')) {
+        if (!line.startsWith('data:')) continue
+        const d = line.slice(5).trim()
+        if (d === '[DONE]') continue
+        try {
+          const j = JSON.parse(d)
+          if (j.error) out += `[stream error] ${j.message}\n`
+          else if (j.content) out += j.content
+        } catch {}
+      }
+    }
+  }
+  return out
+}
+
+function escapeReg(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+}
+
+function syntaxHighlight(json, errFlag) {
+  if (typeof json !== 'string') json = json || ''
+  if (errFlag) return escapeHtml(json)
+  let out = escapeHtml(json)
+    .replace(/("(?:\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*")\s*:/g, '<span class="text-zinc-400">$1</span>:')
+    .replace(/\b(true|false)\b/g, '<span class="text-zinc-300">$1</span>')
+    .replace(/\bnull\b/g, '<span class="text-zinc-500">null</span>')
+  return out
+}
+function prettyJson(obj, indent = 2) {
+  try { return JSON.stringify(typeof obj === 'string' ? JSON.parse(obj) : obj, null, indent) }
+  catch { return obj }
+}
+
+let runAbort = null
+function stopRun() {
+  if (runAbort) { runAbort.abort(); runAbort = null }
+}
+
+function buildReqUI(def) {
+  const host = location.host
+  const wrap = document.createElement('div')
+  wrap.className = 'req-block'
+
+  const topbar = document.createElement('div')
+  topbar.className = 'req-topbar'
+  topbar.innerHTML = `
+    <span class="req-label">${escapeHtml(def.requestLabel)}</span>
+    <div class="flex items-center gap-2">
+      <button class="copy-btn" data-copy="curl"><i data-lucide="terminal" class="size-3"></i> curl</button>
+      <button class="copy-btn" data-copy="json"><i data-lucide="copy" class="size-3"></i> copy</button>
+      <button class="btn btn-primary btn-sm" data-run><i data-lucide="play" class="size-3"></i> run</button>
+    </div>`
+  wrap.appendChild(topbar)
+
+  const pre = document.createElement('pre')
+  pre.className = 'req-code'
+  const body = document.createElement('textarea')
+  body.className = 'req-body'
+  body.spellcheck = false
+  wrap.appendChild(pre)
+  wrap.appendChild(body)
+
+  if (def.body) {
+    body.value = def.body
+    pre.textContent = def.body
+    pre.classList.add('show')
+    wrap.classList.add('has-body')
+  } else {
+    const hint = document.createElement('div')
+    hint.className = 'px-4 py-3 mono text-[12px] text-text-3'
+    hint.textContent = def.bodyHint || 'No body required.'
+    wrap.appendChild(hint)
+    body.classList.add('hidden')
+  }
+
+  const respPanel = document.createElement('div')
+  respPanel.className = 'resp-panel hidden'
+  respPanel.innerHTML = `
+    <div class="resp-head">
+      <span class="mono text-[11px] text-text-3">response</span>
+      <span class="status-badge load" data-status><span class="loading-wave" style="display:inline-flex;margin-right:6px"><span></span><span></span><span></span><span></span><span></span></span>loading</span>
+    </div>
+    <pre class="resp-pre hint" data-body>running request…</pre>`
+  wrap.appendChild(respPanel)
+
+  const setJson = (s) => { pre.textContent = s; pre.classList.add('show'); body.classList.remove('hidden'); }
+  const getCurl = () => {
+    if (def.curlNow) return def.curlNow.replace('HOST', host)
+    try { return def.curl(reqBodyJson(body.value), host) } catch (e) { return '# ' + e.message }
+  }
+
+  topbar.querySelector('[data-copy="json"]').addEventListener('click', (e) => {
+    const s = body.value || '{}'
+    navigator.clipboard.writeText(s).then(() => flashCopied(e.currentTarget))
+  })
+  topbar.querySelector('[data-copy="curl"]').addEventListener('click', (e) => {
+    navigator.clipboard.writeText(getCurl()).then(() => flashCopied(e.currentTarget))
+  })
+  body.addEventListener('input', () => {
+    if (def.body) localStorage.setItem('req:' + def.id, body.value)
+    body.classList.remove('err')
+  })
+  setupBodyPrefill(def, body)
+
+  topbar.querySelector('[data-run]').addEventListener('click', async () => {
+    stopRun()
+    let payload
+    if (!def.body) {
+      payload = null
+    } else {
+      try { payload = reqBodyJson(body.value) } catch (e) {
+        body.classList.add('err')
+        showResp(respPanel, e.message, true)
+        showToast(e.message, 'error')
+        return
+      }
+      body.classList.remove('err')
+    }
+    respPanel.classList.remove('hidden')
+    showResp(respPanel, 'running request…', false, true)
+    const ac = new AbortController()
+    runAbort = ac
+    const timer = setTimeout(() => ac.abort(), 30000)
+    try {
+      const text = await def.run(payload, ac.signal)
+      showResp(respPanel, text, String(text).includes('HTTP ') || String(text).includes('stream error'), false)
+    } catch (err) {
+      showResp(respPanel, err.name === 'AbortError' ? 'request aborted (timeout)' : String(err && err.message || err), true, false)
+      showToast(err.name === 'AbortError' ? 'Request timed out' : 'Request failed', 'error')
+    } finally {
+      clearTimeout(timer)
+      if (runAbort === ac) runAbort = null
+    }
+  })
+  return wrap
+}
+
+function showResp(panel, text, isErr, loading) {
+  const s = panel.querySelector('[data-status]')
+  const b = panel.querySelector('[data-body]')
+  if (loading) {
+    s.className = 'status-badge load'
+    s.innerHTML = '<span class="loading-wave" style="display:inline-flex;margin-right:6px"><span></span><span></span><span></span><span></span><span></span></span>loading'
+    b.className = 'resp-pre hint'
+    b.innerHTML = escapeHtml(text)
+    return
+  }
+  s.className = 'status-badge ' + (isErr ? 'err' : 'ok')
+  s.textContent = isErr ? 'error' : '200 ok'
+  b.className = 'resp-pre' + (isErr ? ' err' : '')
+  b.innerHTML = syntaxHighlight(text, isErr)
+}
+
+function flashCopied(btn) {
+  btn.classList.add('copied')
+  const span = document.createElement('span')
+  span.textContent = 'copied!'
+  btn.appendChild(span)
+  setTimeout(() => {
+    btn.classList.remove('copied')
+    span.remove()
+  }, 1400)
+}
+
+function setupBodyPrefill(def, body) {
+  const saved = localStorage.getItem('req:' + def.id)
+  if (saved && def.body) body.value = saved
+}
+
+async function setupDocs() {
+  const root = document.getElementById('endpoints')
+  if (!root || root.dataset.ready) return
+  root.dataset.ready = '1'
+  root.innerHTML = '<div class="mt-4"><div class="skeleton h-12 w-full rounded-lg"></div></div>'
+  for (const def of DOC_ENDPOINTS) {
+    const el = document.createElement('div')
+    el.className = 'endpoint'
+    el.id = 'ep-' + def.id
+    el.innerHTML = `
+      <button class="endpoint-head">
+        <span class="method ${def.method.toLowerCase()}">${def.method}</span>
+        <span class="path">${escapeHtml(def.path)}</span>
+        <span class="endpoint-desc">${escapeHtml(def.desc)}</span>
+        <i data-lucide="chevron-down" class="size-4 shrink-0 text-text-3 transition-transform duration-200"></i>
+      </button>
+      <div class="endpoint-body hidden"></div>`
+    const bodyWrap = el.querySelector('.endpoint-body')
+    const chevron = el.querySelector('i')
+    const head = el.querySelector('.endpoint-head')
+    el.classList.add('animated')
+    head.addEventListener('click', () => {
+      const open = !bodyWrap.classList.contains('hidden')
+      bodyWrap.classList.toggle('hidden', open)
+      chevron.style.transform = open ? '' : 'rotate(180deg)'
+      if (catalogOpenId && catalogOpenId !== def.id) {
+        const other = document.getElementById('ep-' + catalogOpenId)
+        if (other) {
+          const ob = other.querySelector('.endpoint-body')
+          const oc = other.querySelector('.endpoint-head i')
+          ob.classList.add('hidden')
+          if (oc) oc.style.transform = ''
+        }
+      }
+      catalogOpenId = open ? null : def.id
+      if (!open && !bodyWrap.childElementCount) bodyWrap.appendChild(buildReqUI(def))
+      lucide.createIcons()
+    })
+    root.appendChild(el)
+  }
+  lucide.createIcons()
+}
 function init() {
   setupRouter()
-  setupLanding()
-  setupAuth()
+  setupNav()
+  if (document.getElementById('auth-page')) setupAuth()
   setupChatExtras()
   setupEffects()
+  setupCatalog()
+  setupDocs()
   navigate()
 
   if (window.visualViewport) {
@@ -1713,6 +2130,7 @@ function init() {
     updateControls()
     renderModeButtons()
     loadModels()
+    renderCatalog()
     input.focus()
 
     try {
